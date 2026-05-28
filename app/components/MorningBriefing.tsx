@@ -150,27 +150,59 @@ export default function MorningBriefing({ data, onChange }: Props) {
       </div>
 
       <div className="mb-cards">
-        {/* Scripture + Reflection */}
-        <div className="mb-card">
-          <h2 className="mb-label">Scripture</h2>
-          {generating && <p className="mb-shimmer">Loading today's scripture…</p>}
-          {genError && (
-            <p className="mb-gen-error">
-              {genError}{' '}
-              <button className="mb-retry" onClick={generate}>Retry</button>
-            </p>
-          )}
-          {briefing.scripture && (
-            <>
-              <blockquote className="mb-verse">
-                &ldquo;{briefing.scripture.text}&rdquo;
-              </blockquote>
-              <p className="mb-reference">{briefing.scripture.reference}</p>
-              {briefing.reflection && (
-                <p className="mb-reflection">{briefing.reflection}</p>
-              )}
-            </>
-          )}
+        {/* Top row: Scripture + Priorities side by side */}
+        <div className="mb-top-row">
+          {/* Scripture + Reflection */}
+          <div className="mb-card">
+            <h2 className="mb-label">Scripture</h2>
+            {generating && <p className="mb-shimmer">Loading today's scripture…</p>}
+            {genError && (
+              <p className="mb-gen-error">
+                {genError}{' '}
+                <button className="mb-retry" onClick={generate}>Retry</button>
+              </p>
+            )}
+            {briefing.scripture && (
+              <>
+                <blockquote className="mb-verse">
+                  &ldquo;{briefing.scripture.text}&rdquo;
+                </blockquote>
+                <p className="mb-reference">{briefing.scripture.reference}</p>
+                {briefing.reflection && (
+                  <p className="mb-reflection">{briefing.reflection}</p>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Top 3 Priorities */}
+          <div className="mb-card">
+            <h2 className="mb-label">Top 3 Priorities</h2>
+            <ol className="mb-priority-list">
+              {priorities.slice(0, 3).map((p, i) => (
+                <li key={p.id} className="mb-priority-item">
+                  <button
+                    className={`mb-check${p.completed ? ' mb-check--done' : ''}`}
+                    onClick={() => togglePriority(i)}
+                    aria-label={p.completed ? 'Mark incomplete' : 'Mark complete'}
+                  >
+                    {p.completed && (
+                      <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M2 6.5l2.5 2.5 5-5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </button>
+                  <input
+                    type="text"
+                    className={`mb-priority-input${p.completed ? ' mb-priority-input--done' : ''}`}
+                    placeholder={`Priority ${i + 1}`}
+                    value={p.text}
+                    onChange={e => setPriorityText(i, e.target.value)}
+                  />
+                </li>
+              ))}
+            </ol>
+          </div>
         </div>
 
         {/* Today's Intention */}
@@ -213,42 +245,10 @@ export default function MorningBriefing({ data, onChange }: Props) {
           </div>
         )}
 
-        {/* Bottom row: Priorities + Calendar */}
-        <div className="mb-bottom-row">
-          {/* Top 3 Priorities */}
-          <div className="mb-card">
-            <h2 className="mb-label">Top 3 Priorities</h2>
-            <ol className="mb-priority-list">
-              {priorities.slice(0, 3).map((p, i) => (
-                <li key={p.id} className="mb-priority-item">
-                  <button
-                    className={`mb-check${p.completed ? ' mb-check--done' : ''}`}
-                    onClick={() => togglePriority(i)}
-                    aria-label={p.completed ? 'Mark incomplete' : 'Mark complete'}
-                  >
-                    {p.completed && (
-                      <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <path d="M2 6.5l2.5 2.5 5-5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    )}
-                  </button>
-                  <input
-                    type="text"
-                    className={`mb-priority-input${p.completed ? ' mb-priority-input--done' : ''}`}
-                    placeholder={`Priority ${i + 1}`}
-                    value={p.text}
-                    onChange={e => setPriorityText(i, e.target.value)}
-                  />
-                </li>
-              ))}
-            </ol>
-          </div>
-
-          {/* Today's calendar */}
-          <div className="mb-card">
-            <h2 className="mb-label">Today&rsquo;s Schedule</h2>
-            <CalendarEvents timeMin={calMin} timeMax={calMax} groupByDay={false} />
-          </div>
+        {/* Today's calendar */}
+        <div className="mb-card">
+          <h2 className="mb-label">Today&rsquo;s Schedule</h2>
+          <CalendarEvents timeMin={calMin} timeMax={calMax} groupByDay={false} />
         </div>
       </div>
     </section>

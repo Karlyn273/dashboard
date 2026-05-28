@@ -86,11 +86,20 @@ body::before {
 .status--saving { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); }
 .status--error  { background: color-mix(in srgb, var(--red)    15%, transparent); color: var(--red);    }
 
+.greeting {
+  padding: 0.625rem 1.5rem 0;
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+}
+
 .main {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 1.5rem;
+  padding: 1rem 1.5rem 1.5rem;
   gap: 0.75rem;
   overflow-y: auto;
 }
@@ -285,15 +294,15 @@ body::before {
   color: var(--text-muted);
 }
 
-/* Bottom row */
-.mb-bottom-row {
+/* Top row: scripture (wider) + priorities side by side */
+.mb-top-row {
   display: grid;
   grid-template-columns: 1fr;
   gap: 0.875rem;
 }
 
-@media (min-width: 600px) {
-  .mb-bottom-row { grid-template-columns: 1fr 1fr; }
+@media (min-width: 640px) {
+  .mb-top-row { grid-template-columns: 3fr 2fr; }
 }
 
 /* Priorities */
