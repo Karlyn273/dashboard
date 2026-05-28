@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import MorningBriefing from './components/MorningBriefing';
 import WeekView        from './components/WeekView';
+import QuarterView     from './components/QuarterView';
 
 type SaveStatus = 'saved' | 'pending' | 'saving' | 'error';
-type Tab        = 'morning' | 'week';
+type Tab        = 'morning' | 'week' | 'quarter';
 
 const STATUS_LABEL: Record<SaveStatus, string> = {
   saved:   'Saved',
@@ -13,6 +14,12 @@ const STATUS_LABEL: Record<SaveStatus, string> = {
   saving:  'Saving…',
   error:   'Error saving',
 };
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'morning', label: 'Morning' },
+  { id: 'week',    label: 'Week'    },
+  { id: 'quarter', label: 'Quarter' },
+];
 
 export default function DashboardPage() {
   const [data,   setData]   = useState<Record<string, unknown> | null>(null);
@@ -72,24 +79,22 @@ export default function DashboardPage() {
       <header className="header">
         <h1>Dashboard</h1>
         <nav className="tabs" aria-label="Dashboard sections">
-          <button
-            className={`tab${tab === 'morning' ? ' tab--active' : ''}`}
-            onClick={() => setTab('morning')}
-          >
-            Morning
-          </button>
-          <button
-            className={`tab${tab === 'week' ? ' tab--active' : ''}`}
-            onClick={() => setTab('week')}
-          >
-            Week
-          </button>
+          {TABS.map(t => (
+            <button
+              key={t.id}
+              className={`tab${tab === t.id ? ' tab--active' : ''}`}
+              onClick={() => setTab(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
         </nav>
         <span className={`status status--${status}`}>{STATUS_LABEL[status]}</span>
       </header>
       <main className="main">
         {tab === 'morning' && <MorningBriefing data={data} onChange={updateData} />}
         {tab === 'week'    && <WeekView        data={data} onChange={updateData} />}
+        {tab === 'quarter' && <QuarterView     data={data} onChange={updateData} />}
       </main>
     </div>
   );
