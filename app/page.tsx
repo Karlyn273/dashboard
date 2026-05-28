@@ -6,9 +6,10 @@ import WeekView        from './components/WeekView';
 import QuarterView     from './components/QuarterView';
 import HabitTracker    from './components/HabitTracker';
 import BucketList      from './components/BucketList';
+import YearView        from './components/YearView';
 
 type SaveStatus = 'saved' | 'pending' | 'saving' | 'error';
-type Tab        = 'morning' | 'week' | 'quarter' | 'habits' | 'bucket';
+type Tab        = 'morning' | 'week' | 'quarter' | 'habits' | 'bucket' | 'year';
 
 const STATUS_LABEL: Record<SaveStatus, string> = {
   saved:   'Saved',
@@ -22,7 +23,8 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'week',    label: 'Week'       },
   { id: 'quarter', label: 'Quarter'    },
   { id: 'habits',  label: 'Habits'     },
-  { id: 'bucket',  label: 'Bucket List'},
+  { id: 'bucket',  label: 'Bucket List' },
+  { id: 'year',    label: 'Year'        },
 ];
 
 export default function DashboardPage() {
@@ -101,6 +103,7 @@ export default function DashboardPage() {
         {tab === 'quarter' && <QuarterView     data={data} onChange={updateData} />}
         {tab === 'habits'  && <HabitTracker    data={data} onChange={updateData} />}
         {tab === 'bucket'  && <BucketList      data={data} onChange={updateData} />}
+        {tab === 'year'    && <YearView        data={data} onChange={updateData} />}
       </main>
     </div>
   );

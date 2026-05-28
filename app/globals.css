@@ -2306,3 +2306,358 @@ body {
 }
 
 .bl-btn-add:hover { opacity: 0.85; }
+
+/* ── Year View ────────────────────────────────────────────────── */
+
+.yv {
+  display: flex;
+  flex-direction: column;
+  gap: 1.625rem;
+}
+
+/* Year navigation */
+.yv-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.yv-year {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  min-width: 4.5rem;
+  text-align: center;
+}
+
+/* Shared warm section base */
+.yv-manifesto,
+.yv-buckets-section,
+.yv-goals-section {
+  background: #1b1610;
+  border: 1px solid #3a2f1e;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+
+/* Section headings */
+.yv-manifesto-hd,
+.yv-section-hd {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #c07830;
+  margin-bottom: 1.125rem;
+}
+
+.yv-hd-mark {
+  font-size: 0.7rem;
+  opacity: 0.75;
+}
+
+/* Top row with heading + action button */
+.yv-section-toprow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.125rem;
+}
+
+.yv-section-toprow .yv-section-hd {
+  margin-bottom: 0;
+}
+
+.yv-outline-btn {
+  background: transparent;
+  border: 1px solid #3a2f1e;
+  color: #9a7a55;
+  font-size: 0.75rem;
+  font-family: inherit;
+  padding: 0.3rem 0.75rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.yv-outline-btn:hover { color: #c07830; border-color: #c07830; }
+
+.yv-section-empty {
+  font-size: 0.85rem;
+  color: #5a4530;
+  line-height: 1.7;
+  max-width: 40rem;
+}
+
+/* Shared warm delete / add buttons */
+.yv-del {
+  background: transparent;
+  border: none;
+  color: #4a3820;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 0 0.2rem;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color 0.15s;
+  font-family: inherit;
+}
+
+.yv-del:hover { color: var(--red); }
+
+.yv-add {
+  width: 100%;
+  background: transparent;
+  border: 1px dashed #3a2f1e;
+  color: #9a7a55;
+  border-radius: 0.375rem;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.yv-add:hover { color: #c07830; border-color: #c07830; }
+
+/* ── Manifesto prompts ── */
+.yv-prompts-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.875rem;
+}
+
+@media (min-width: 640px) {
+  .yv-prompts-grid { grid-template-columns: 1fr 1fr; }
+}
+
+.yv-prompt-card {
+  background: rgba(255, 248, 235, 0.03);
+  border: 1px solid #3a2f1e;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.yv-prompt-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: #c07830;
+}
+
+.yv-prompt-ta {
+  background: transparent;
+  border: none;
+  resize: none;
+  color: #f0e4cc;
+  font-size: 0.9rem;
+  font-family: inherit;
+  line-height: 1.75;
+  outline: none;
+  min-height: 5.5rem;
+  width: 100%;
+}
+
+.yv-prompt-ta::placeholder { color: #5a4530; }
+
+/* ── Intention buckets ── */
+.yv-buckets-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.875rem;
+}
+
+@media (min-width: 600px) {
+  .yv-buckets-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (min-width: 900px) {
+  .yv-buckets-grid { grid-template-columns: 1fr 1fr 1fr; }
+}
+
+.yv-bucket-card {
+  background: rgba(255, 248, 235, 0.03);
+  border: 1px solid #3a2f1e;
+  border-radius: 0.5rem;
+  padding: 0.875rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.yv-bucket-hd {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.yv-bucket-title {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #3a2f1e;
+  color: #f0e4cc;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 0.15rem 0;
+  outline: none;
+  min-width: 0;
+  transition: border-bottom-color 0.15s;
+}
+
+.yv-bucket-title:focus        { border-bottom-color: #c07830; }
+.yv-bucket-title::placeholder { color: #5a4530; }
+
+.yv-bucket-ta {
+  background: transparent;
+  border: none;
+  resize: none;
+  color: #c4a882;
+  font-size: 0.85rem;
+  font-family: inherit;
+  line-height: 1.7;
+  outline: none;
+  min-height: 4.5rem;
+  width: 100%;
+}
+
+.yv-bucket-ta::placeholder { color: #4a3820; }
+
+/* ── Yearly goals ── */
+.yv-goals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.yv-cat-card {
+  border: 1px solid #3a2f1e;
+  border-left-width: 3px;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: rgba(255, 248, 235, 0.02);
+}
+
+.yv-cat-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: background 0.12s;
+}
+
+.yv-cat-toggle:hover { background: rgba(255, 248, 235, 0.03); }
+
+.yv-cat-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.yv-cat-name {
+  flex: 1;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #f0e4cc;
+}
+
+.yv-cat-tally {
+  font-size: 0.72rem;
+  color: #9a7a55;
+  margin-right: 0.25rem;
+}
+
+.yv-chevron {
+  width: 0.9rem;
+  height: 0.9rem;
+  color: #9a7a55;
+  flex-shrink: 0;
+  transition: transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.yv-chevron svg { width: 0.9rem; height: 0.9rem; }
+.yv-chevron--open { transform: rotate(180deg); }
+
+.yv-cat-body {
+  padding: 0.75rem 1rem 1rem;
+  border-top: 1px solid #3a2f1e;
+}
+
+.yv-goal-empty {
+  font-size: 0.8rem;
+  color: #5a4530;
+  margin-bottom: 0.625rem;
+}
+
+.yv-goal-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.yv-goal-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.yv-check {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  border: 2px solid #4a3820;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.yv-check:hover   { border-color: #c07830; }
+.yv-check--on     { color: #fff; }
+.yv-check--on svg { width: 0.7rem; height: 0.7rem; }
+
+.yv-goal-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #3a2f1e;
+  color: #f0e4cc;
+  font-size: 0.875rem;
+  font-family: inherit;
+  padding: 0.2rem 0;
+  outline: none;
+  min-width: 0;
+  transition: border-bottom-color 0.15s;
+}
+
+.yv-goal-input:focus        { border-bottom-color: #c07830; }
+.yv-goal-input::placeholder { color: #5a4530; }
+.yv-goal-input--done        { text-decoration: line-through; color: #9a7a55; }
