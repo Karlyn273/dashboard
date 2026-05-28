@@ -9,21 +9,22 @@ function getOrCreateUserId(request: NextRequest): [string, boolean] {
 
 export async function GET(request: NextRequest) {
   await ensureTable();
-  const [userId, isNew] = getOrCreateUserId(request);
+  const [userId] = getOrCreateUserId(request);
   const raw  = await loadData(userId);
   // Strip server-side-only fields before sending to the client
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { _googleTokens: _, ...data } = raw as Record<string, unknown>;
   const response = NextResponse.json({ data });
-  if (isNew) {
-    response.cookies.set('dashboard_user_id', userId, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 60 * 60 * 24 * 365 * 10,
-      path: '/',
-    });
-  }
+  // Always refresh the cookie so sameSite=lax takes effect on existing sessions.
+  // lax (not strict) is required so the cookie is sent when Google redirects back
+  // during OAuth — strict blocks it on cross-site top-level navigations.
+  response.cookies.set('dashboard_user_id', userId, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24 * 365 * 10,
+    path: '/',
+  });
   return response;
 }
 
