@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import MorningBriefing from './components/MorningBriefing';
 
 type SaveStatus = 'saved' | 'pending' | 'saving' | 'error';
 
@@ -12,19 +13,14 @@ const STATUS_LABEL: Record<SaveStatus, string> = {
 };
 
 export default function DashboardPage() {
-  const [data, setData]           = useState<unknown>(null);
-  const [raw, setRaw]             = useState('');
-  const [status, setStatus]       = useState<SaveStatus>('saved');
-  const [parseError, setParseError] = useState('');
-  const saveTimer                 = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [data,   setData]   = useState<Record<string, unknown> | null>(null);
+  const [status, setStatus] = useState<SaveStatus>('saved');
+  const saveTimer           = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     fetch('/api/dashboard')
       .then(r => r.json())
-      .then(({ data }) => {
-        setData(data);
-        setRaw(JSON.stringify(data, null, 2));
-      })
+      .then(({ data }) => setData(data as Record<string, unknown>))
       .catch(() => setStatus('error'));
   }, []);
 
@@ -52,18 +48,17 @@ export default function DashboardPage() {
     [persist],
   );
 
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const text = e.target.value;
-    setRaw(text);
-    try {
-      const parsed = JSON.parse(text);
-      setParseError('');
-      setData(parsed);
-      scheduleSave(parsed);
-    } catch (err) {
-      setParseError((err as Error).message);
-    }
-  };
+  const updateData = useCallback(
+    (updater: (prev: Record<string, unknown>) => Record<string, unknown>) => {
+      setData(prev => {
+        if (!prev) return prev;
+        const next = updater(prev);
+        scheduleSave(next);
+        return next;
+      });
+    },
+    [scheduleSave],
+  );
 
   if (data === null) {
     return <div className="loading">Loading…</div>;
@@ -76,14 +71,7 @@ export default function DashboardPage() {
         <span className={`status status--${status}`}>{STATUS_LABEL[status]}</span>
       </header>
       <main className="main">
-        <textarea
-          className="editor"
-          value={raw}
-          onChange={handleChange}
-          spellCheck={false}
-          aria-label="Dashboard data (JSON)"
-        />
-        {parseError && <p className="parse-error">{parseError}</p>}
+        <MorningBriefing data={data} onChange={updateData} />
       </main>
     </div>
   );
