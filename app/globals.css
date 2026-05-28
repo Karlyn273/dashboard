@@ -358,3 +358,305 @@ body {
   font-size: 0.75rem !important;
   color: #4a3820;
 }
+
+/* ── Tab navigation ───────────────────────────────────────────── */
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.tab {
+  padding: 0.3rem 0.9rem;
+  border-radius: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: inherit;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+  line-height: 1.5;
+}
+
+.tab:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tab--active {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.07);
+  border-color: var(--border);
+}
+
+/* ── Week View ────────────────────────────────────────────────── */
+
+.wv-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  margin-bottom: 1.25rem;
+}
+
+.wv-nav-btn {
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.375rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  font-family: inherit;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+}
+
+.wv-nav-btn:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.wv-nav-range {
+  font-size: 0.975rem;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.wv-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.875rem;
+}
+
+@media (min-width: 640px) {
+  .wv-grid { grid-template-columns: 1fr 1fr; }
+}
+
+.wv-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.625rem;
+  padding: 1.125rem;
+}
+
+.wv-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-muted);
+  margin-bottom: 0.875rem;
+}
+
+.wv-sublabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin: 0.875rem 0 0.625rem;
+}
+
+/* Task / goal lists */
+.wv-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.wv-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.wv-check {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.wv-check:hover    { border-color: var(--accent); }
+.wv-check--on      { background: var(--accent); border-color: var(--accent); color: #fff; }
+.wv-check--on svg  { width: 0.7rem; height: 0.7rem; }
+
+.wv-item-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.875rem;
+  font-family: inherit;
+  padding: 0.2rem 0;
+  outline: none;
+  min-width: 0;
+  transition: border-bottom-color 0.15s;
+}
+
+.wv-item-input:focus         { border-bottom-color: var(--accent); }
+.wv-item-input::placeholder  { color: #373a47; }
+.wv-item-input--done         { text-decoration: line-through; color: var(--text-muted); }
+
+.wv-del {
+  background: transparent;
+  border: none;
+  color: #373a47;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 0 0.2rem;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.wv-del:hover { color: var(--red); }
+
+.wv-add {
+  width: 100%;
+  background: transparent;
+  border: 1px dashed var(--border);
+  color: var(--text-muted);
+  border-radius: 0.375rem;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.wv-add:hover { color: var(--text); border-color: var(--text-muted); }
+
+/* Gym tracker */
+.wv-gym-row {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.wv-gym-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.wv-gym-circle {
+  width: 2.125rem;
+  height: 2.125rem;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: #fff;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.wv-gym-day:hover .wv-gym-circle { border-color: var(--accent); }
+.wv-gym-day--on .wv-gym-circle    { background: var(--accent); border-color: var(--accent); }
+.wv-gym-day--on svg               { width: 0.7rem; height: 0.7rem; }
+
+.wv-gym-abbr {
+  font-size: 0.62rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.wv-gym-tally {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Textareas */
+.wv-textarea {
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  color: var(--text);
+  font-size: 0.875rem;
+  font-family: inherit;
+  line-height: 1.65;
+  padding: 0.625rem 0.75rem;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.wv-textarea:focus       { border-color: var(--accent); }
+.wv-textarea::placeholder{ color: #373a47; }
+
+.wv-focus-ta       { min-height: 4.5rem; margin-bottom: 0; }
+.wv-reflections-ta { min-height: 7rem; }
+
+/* Currently reading */
+.wv-reading-field {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-family: inherit;
+  padding: 0.35rem 0;
+  outline: none;
+  margin-bottom: 0.625rem;
+  transition: border-bottom-color 0.15s;
+}
+
+.wv-reading-field:focus       { border-bottom-color: var(--accent); }
+.wv-reading-field::placeholder{ color: #373a47; }
+
+/* Calendar placeholder */
+.wv-cal-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 1.75rem 1rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.wv-cal-empty svg {
+  width: 2rem;
+  height: 2rem;
+  color: var(--border);
+  margin-bottom: 0.25rem;
+}
+
+.wv-cal-empty p { font-size: 0.875rem; }
+
+.wv-cal-hint {
+  font-size: 0.75rem !important;
+  color: #373a47;
+}

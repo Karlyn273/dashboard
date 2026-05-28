@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import MorningBriefing from './components/MorningBriefing';
+import WeekView        from './components/WeekView';
 
 type SaveStatus = 'saved' | 'pending' | 'saving' | 'error';
+type Tab        = 'morning' | 'week';
 
 const STATUS_LABEL: Record<SaveStatus, string> = {
   saved:   'Saved',
@@ -15,6 +17,7 @@ const STATUS_LABEL: Record<SaveStatus, string> = {
 export default function DashboardPage() {
   const [data,   setData]   = useState<Record<string, unknown> | null>(null);
   const [status, setStatus] = useState<SaveStatus>('saved');
+  const [tab,    setTab]    = useState<Tab>('morning');
   const saveTimer           = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -68,10 +71,25 @@ export default function DashboardPage() {
     <div className="dashboard">
       <header className="header">
         <h1>Dashboard</h1>
+        <nav className="tabs" aria-label="Dashboard sections">
+          <button
+            className={`tab${tab === 'morning' ? ' tab--active' : ''}`}
+            onClick={() => setTab('morning')}
+          >
+            Morning
+          </button>
+          <button
+            className={`tab${tab === 'week' ? ' tab--active' : ''}`}
+            onClick={() => setTab('week')}
+          >
+            Week
+          </button>
+        </nav>
         <span className={`status status--${status}`}>{STATUS_LABEL[status]}</span>
       </header>
       <main className="main">
-        <MorningBriefing data={data} onChange={updateData} />
+        {tab === 'morning' && <MorningBriefing data={data} onChange={updateData} />}
+        {tab === 'week'    && <WeekView        data={data} onChange={updateData} />}
       </main>
     </div>
   );
