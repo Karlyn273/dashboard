@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import BookSearch, { BookResult } from './BookSearch';
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -11,13 +12,22 @@ type GymDay = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
 type GymMap  = Partial<Record<GymDay, boolean>>;
 
 interface WeekData {
-  tasks?:         Task[];
-  gym?:           GymMap;
-  focus?:         string;
-  goals?:         Goal[];
-  reflections?:   string;
-  readingTitle?:  string;
-  readingAuthor?: string;
+  tasks?:       Task[];
+  gym?:         GymMap;
+  focus?:       string;
+  goals?:       Goal[];
+  reflections?: string;
+}
+
+interface Book {
+  id:               string;
+  olKey:            string;
+  title:            string;
+  author:           string;
+  coverId?:         number;
+  status:           'reading' | 'finished';
+  finishedQuarter?: string;
+  finishedDate?:    string;
 }
 
 interface Props {
@@ -29,6 +39,13 @@ interface Props {
 
 const GYM_DAYS: GymDay[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 const GYM_ABBR = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+const COVER_URL = (id: number) => `https://covers.openlibrary.org/b/id/${id}-M.jpg`;
+
+function currentQuarterKey(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-Q${Math.ceil((now.getMonth() + 1) / 3)}`;
+}
 
 function getMonday(offset: number): Date {
   const d   = new Date();
@@ -147,7 +164,8 @@ function CalendarIcon() {
 // ── Main component ───────────────────────────────────────────────
 
 export default function WeekView({ data, onChange }: Props) {
-  const [offset, setOffset] = useState(0);
+  const [offset,     setOffset]     = useState(0);
+  const [showSearch, setShowSearch] = useState(false);
 
   const monday = getMonday(offset);
   const key    = weekKey(monday);
@@ -195,6 +213,39 @@ export default function WeekView({ data, onChange }: Props) {
   // ── Gym handler
   const toggleGym = (day: GymDay) =>
     setWeek({ gym: { ...gym, [day]: !gym[day] } });
+
+  // ── Book handlers
+  type BookStore   = Book[];
+  const books        = (data.books ?? []) as BookStore;
+  const readingBooks = books.filter(b => b.status === 'reading');
+
+  const addBook = (r: BookResult) =>
+    onChange(prev => ({
+      ...prev,
+      books: [...((prev.books ?? []) as BookStore), {
+        id:      crypto.randomUUID(),
+        olKey:   r.olKey,
+        title:   r.title,
+        author:  r.author,
+        coverId: r.coverId,
+        status:  'reading' as const,
+      }],
+    }));
+
+  const finishBook = (id: string) =>
+    onChange(prev => ({
+      ...prev,
+      books: ((prev.books ?? []) as BookStore).map(b =>
+        b.id === id
+          ? {
+              ...b,
+              status:          'finished' as const,
+              finishedQuarter: currentQuarterKey(),
+              finishedDate:    new Date().toLocaleDateString('en-CA'),
+            }
+          : b,
+      ),
+    }));
 
   return (
     <section className="wv">
@@ -309,20 +360,35 @@ export default function WeekView({ data, onChange }: Props) {
         {/* ── Currently reading ── */}
         <div className="wv-card">
           <h2 className="wv-label">Currently Reading</h2>
-          <input
-            className="wv-reading-field"
-            type="text"
-            placeholder="Title"
-            value={week.readingTitle ?? ''}
-            onChange={e => setWeek({ readingTitle: e.target.value })}
-          />
-          <input
-            className="wv-reading-field"
-            type="text"
-            placeholder="Author"
-            value={week.readingAuthor ?? ''}
-            onChange={e => setWeek({ readingAuthor: e.target.value })}
-          />
+          {readingBooks.length === 0 ? (
+            <p className="bk-empty">No book in progress</p>
+          ) : (
+            <ul className="bk-reading-list">
+              {readingBooks.map(b => (
+                <li key={b.id} className="bk-reading-item">
+                  <div className="bk-cover-sm">
+                    {b.coverId
+                      ? <img src={COVER_URL(b.coverId)} alt="" className="bk-cover-img-sm" loading="lazy" />
+                      : <span className="bk-no-cover-sm">📖</span>
+                    }
+                  </div>
+                  <div className="bk-info">
+                    <span className="bk-title">{b.title}</span>
+                    {b.author && <span className="bk-author">{b.author}</span>}
+                  </div>
+                  <button className="bk-finish-btn" onClick={() => finishBook(b.id)}>
+                    Finished
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <button className="wv-add" onClick={() => setShowSearch(true)}>
+            {readingBooks.length > 0 ? '+ Add another book' : '+ Find a book'}
+          </button>
+          {showSearch && (
+            <BookSearch onSelect={addBook} onClose={() => setShowSearch(false)} />
+          )}
         </div>
 
         {/* ── Calendar placeholder ── */}

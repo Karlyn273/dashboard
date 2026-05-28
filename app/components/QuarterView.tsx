@@ -42,6 +42,17 @@ interface Achievement {
   quarter: string;
 }
 
+interface Book {
+  id:               string;
+  olKey:            string;
+  title:            string;
+  author:           string;
+  coverId?:         number;
+  status:           'reading' | 'finished';
+  finishedQuarter?: string;
+  finishedDate?:    string;
+}
+
 interface QuarterData  { goals?: QuarterlyGoal[]; }
 interface FinanceData  { cards?: CreditCard[]; savingsGoals?: SavingsGoal[]; }
 
@@ -128,6 +139,8 @@ function $$(n: number): string {
 
 function numVal(s: string): number { return parseFloat(s) || 0; }
 
+const COVER_URL = (id: number) => `https://covers.openlibrary.org/b/id/${id}-M.jpg`;
+
 // ── Icons ────────────────────────────────────────────────────────
 
 function Tick() {
@@ -166,6 +179,9 @@ export default function QuarterView({ data, onChange }: Props) {
   const achieves = ((data.achievements ?? []) as Achievement[]);
 
   const qAchieves = achieves.filter(a => a.quarter === qKey);
+
+  const books   = ((data.books ?? []) as Book[]);
+  const qBooks  = books.filter(b => b.status === 'finished' && b.finishedQuarter === qKey);
 
   // ── Quarter goals ─────────────────────────────────────────────
 
@@ -531,6 +547,35 @@ export default function QuarterView({ data, onChange }: Props) {
         </div>
 
       </div>
+
+      {/* ── Books Read This Quarter ── */}
+      <div className="qv-card">
+        <h2 className="qv-section-hd">Books Read This Quarter</h2>
+        {qBooks.length === 0 ? (
+          <p className="qv-empty">No books finished this quarter yet.</p>
+        ) : (
+          <ul className="bk-finished-list">
+            {qBooks.map(b => (
+              <li key={b.id} className="bk-finished-item">
+                <div className="bk-cover-sm">
+                  {b.coverId
+                    ? <img src={COVER_URL(b.coverId)} alt="" className="bk-cover-img-sm" loading="lazy" />
+                    : <span className="bk-no-cover-sm">📖</span>
+                  }
+                </div>
+                <div className="bk-info">
+                  <span className="bk-title">{b.title}</span>
+                  {b.author && <span className="bk-author">{b.author}</span>}
+                </div>
+                {b.finishedDate && (
+                  <span className="bk-finished-date">{b.finishedDate}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
     </section>
   );
 }
