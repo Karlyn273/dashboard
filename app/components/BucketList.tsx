@@ -2,8 +2,6 @@
 
 import { useState } from 'react';
 
-// ── Types ────────────────────────────────────────────────────────
-
 type Category = 'Travel' | 'Experience' | 'Career' | 'Personal' | 'Health' | 'Creative' | 'Financial';
 
 interface BucketItem {
@@ -20,8 +18,6 @@ interface Props {
   onChange: (updater: (prev: Record<string, unknown>) => Record<string, unknown>) => void;
 }
 
-// ── Constants ────────────────────────────────────────────────────
-
 const CATEGORIES: Category[] = [
   'Travel', 'Experience', 'Career', 'Personal', 'Health', 'Creative', 'Financial',
 ];
@@ -36,7 +32,15 @@ const CAT_COLOR: Record<Category, string> = {
   Financial:  '#10b981',
 };
 
-// ── Icons ────────────────────────────────────────────────────────
+const CAT_EMOJI: Record<Category, string> = {
+  Travel:     '✈️',
+  Experience: '🌟',
+  Career:     '💼',
+  Personal:   '💫',
+  Health:     '🫀',
+  Creative:   '🎨',
+  Financial:  '💰',
+};
 
 function Tick() {
   return (
@@ -46,19 +50,16 @@ function Tick() {
   );
 }
 
-// ── Component ────────────────────────────────────────────────────
-
 export default function BucketList({ data, onChange }: Props) {
   const [filter,  setFilter]  = useState<Category | 'All'>('All');
-  const [showAdd, setShowAdd] = useState(false);
   const [addText, setAddText] = useState('');
   const [addCat,  setAddCat]  = useState<Category>('Travel');
+  const [adding,  setAdding]  = useState(false);
 
   const items = (data.bucketList ?? []) as BucketItem[];
 
-  const total     = items.length;
   const doneCount = items.filter(i => i.completed).length;
-  const pct       = total > 0 ? Math.round((doneCount / total) * 100) : 0;
+  const pct       = items.length > 0 ? Math.round((doneCount / items.length) * 100) : 0;
 
   const filtered = filter === 'All' ? items : items.filter(i => i.category === filter);
   const sorted   = [
@@ -66,24 +67,13 @@ export default function BucketList({ data, onChange }: Props) {
     ...filtered.filter(i =>  i.completed),
   ];
 
-  // ── Handlers ──────────────────────────────────────────────────
-
   const setItems = (updater: (prev: BucketItem[]) => BucketItem[]) =>
-    onChange(prev => ({
-      ...prev,
-      bucketList: updater((prev.bucketList ?? []) as BucketItem[]),
-    }));
+    onChange(prev => ({ ...prev, bucketList: updater((prev.bucketList ?? []) as BucketItem[]) }));
 
   const toggleItem = (id: string) =>
     setItems(prev => prev.map(item =>
       item.id === id
-        ? {
-            ...item,
-            completed:     !item.completed,
-            completedDate: !item.completed
-              ? new Date().toLocaleDateString('en-CA')
-              : undefined,
-          }
+        ? { ...item, completed: !item.completed, completedDate: !item.completed ? new Date().toLocaleDateString('en-CA') : undefined }
         : item,
     ));
 
@@ -96,54 +86,41 @@ export default function BucketList({ data, onChange }: Props) {
   const addItem = () => {
     const t = addText.trim();
     if (!t) return;
-    setItems(prev => [
-      ...prev,
-      {
-        id:          crypto.randomUUID(),
-        text:        t,
-        category:    addCat,
-        completed:   false,
-        createdDate: new Date().toLocaleDateString('en-CA'),
-      },
-    ]);
+    setItems(prev => [...prev, {
+      id: crypto.randomUUID(), text: t, category: addCat,
+      completed: false, createdDate: new Date().toLocaleDateString('en-CA'),
+    }]);
     setAddText('');
-    setShowAdd(false);
+    setAdding(false);
   };
-
-  const openAdd = () => {
-    if (filter !== 'All') setAddCat(filter);
-    setShowAdd(true);
-  };
-
-  // ── Render ────────────────────────────────────────────────────
 
   return (
     <section className="bl">
 
-      {/* ── Progress header ── */}
-      <div className="bl-header">
-        <div className="bl-stat">
-          <span className="bl-stat-num">{doneCount}</span>
-          <span className="bl-stat-sep"> / </span>
-          <span className="bl-stat-total">{total}</span>
-          <span className="bl-stat-label">completed</span>
+      {/* Header */}
+      <div className="bl-header-card">
+        <div className="bl-header-left">
+          <h2 className="bl-title">Bucket List</h2>
+          <p className="bl-subtitle">Things to do, see, and become before you die</p>
+          {items.length > 0 && (
+            <>
+              <div className="bl-progress-track">
+                <div className="bl-progress-fill" style={{ width: `${pct}%` }} />
+              </div>
+              <p className="bl-progress-text">{doneCount} of {items.length} complete · {pct}%</p>
+            </>
+          )}
         </div>
-        <div className="bl-progress-wrap">
-          <div className="bl-progress-track">
-            <div className="bl-progress-fill" style={{ width: `${pct}%` }} />
-          </div>
-          <span className="bl-pct">{pct}%</span>
-        </div>
+        <button className="bl-add-btn" onClick={() => setAdding(true)}>+ Add Item</button>
       </div>
 
-      {/* ── Category filter chips ── */}
-      <div className="bl-filters" role="group" aria-label="Filter by category">
+      {/* Category filter chips */}
+      <div className="bl-filters">
         <button
           className={`bl-chip${filter === 'All' ? ' bl-chip--on' : ''}`}
           onClick={() => setFilter('All')}
         >
-          All
-          <span className="bl-chip-count">{total}</span>
+          All <span className="bl-chip-count">{items.length}</span>
         </button>
         {CATEGORIES.map(cat => {
           const count = items.filter(i => i.category === cat).length;
@@ -152,94 +129,28 @@ export default function BucketList({ data, onChange }: Props) {
             <button
               key={cat}
               className={`bl-chip${on ? ' bl-chip--on' : ''}`}
-              style={on ? {
-                background:  `color-mix(in srgb, ${CAT_COLOR[cat]} 14%, transparent)`,
-                borderColor:  CAT_COLOR[cat],
-                color:        CAT_COLOR[cat],
-              } : {}}
+              style={on ? { background: `color-mix(in srgb, ${CAT_COLOR[cat]} 14%, transparent)`, borderColor: CAT_COLOR[cat], color: CAT_COLOR[cat] } : {}}
               onClick={() => setFilter(cat)}
             >
-              <span className="bl-chip-dot" style={{ background: CAT_COLOR[cat] }} />
-              {cat}
+              {CAT_EMOJI[cat]} {cat}
               <span className="bl-chip-count">{count}</span>
             </button>
           );
         })}
       </div>
 
-      {/* ── Item list ── */}
-      {sorted.length === 0 ? (
-        <div className="bl-empty">
-          {filter === 'All'
-            ? 'No bucket list items yet — add your first below.'
-            : `No ${filter.toLowerCase()} items yet.`}
-        </div>
-      ) : (
-        <ul className="bl-list">
-          {sorted.map(item => (
-            <li
-              key={item.id}
-              className={`bl-item${item.completed ? ' bl-item--done' : ''}`}
-            >
-              <button
-                className={`bl-check${item.completed ? ' bl-check--on' : ''}`}
-                style={item.completed
-                  ? { background: CAT_COLOR[item.category], borderColor: CAT_COLOR[item.category] }
-                  : {}}
-                onClick={() => toggleItem(item.id)}
-                aria-label={item.completed ? 'Mark incomplete' : 'Mark complete'}
-              >
-                {item.completed && <Tick />}
-              </button>
-
-              <div className="bl-item-body">
-                <input
-                  className={`bl-item-input${item.completed ? ' bl-item-input--done' : ''}`}
-                  value={item.text}
-                  placeholder="Bucket list item…"
-                  onChange={e => updateText(item.id, e.target.value)}
-                />
-                <div className="bl-item-meta">
-                  <span
-                    className="bl-badge"
-                    style={{
-                      background:  `color-mix(in srgb, ${CAT_COLOR[item.category]} 12%, transparent)`,
-                      color:        CAT_COLOR[item.category],
-                      borderColor: `color-mix(in srgb, ${CAT_COLOR[item.category]} 30%, transparent)`,
-                    }}
-                  >
-                    {item.category}
-                  </span>
-                  {item.completed && item.completedDate && (
-                    <span className="bl-done-date">✓ {item.completedDate}</span>
-                  )}
-                </div>
-              </div>
-
-              <button
-                className="wv-del"
-                onClick={() => deleteItem(item.id)}
-                aria-label="Delete item"
-              >
-                ×
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {/* ── Add form ── */}
-      {showAdd ? (
+      {/* Add form */}
+      {adding && (
         <div className="bl-form">
           <input
             className="bl-form-input"
             autoFocus
-            placeholder="What do you want to do before you die?"
+            placeholder="What do you want to do, see, or experience?"
             value={addText}
             onChange={e => setAddText(e.target.value)}
             onKeyDown={e => {
               if (e.key === 'Enter')  addItem();
-              if (e.key === 'Escape') { setShowAdd(false); setAddText(''); }
+              if (e.key === 'Escape') { setAdding(false); setAddText(''); }
             }}
           />
           <div className="bl-form-cats">
@@ -247,29 +158,65 @@ export default function BucketList({ data, onChange }: Props) {
               <button
                 key={cat}
                 className={`bl-cat-btn${addCat === cat ? ' bl-cat-btn--on' : ''}`}
-                style={addCat === cat ? {
-                  background:  `color-mix(in srgb, ${CAT_COLOR[cat]} 15%, transparent)`,
-                  borderColor:  CAT_COLOR[cat],
-                  color:        CAT_COLOR[cat],
-                } : {}}
+                style={addCat === cat ? { background: `color-mix(in srgb, ${CAT_COLOR[cat]} 15%, transparent)`, borderColor: CAT_COLOR[cat], color: CAT_COLOR[cat] } : {}}
                 onClick={() => setAddCat(cat)}
               >
-                {cat}
+                {CAT_EMOJI[cat]} {cat}
               </button>
             ))}
           </div>
           <div className="bl-form-actions">
-            <button
-              className="bl-btn-cancel"
-              onClick={() => { setShowAdd(false); setAddText(''); }}
-            >
-              Cancel
-            </button>
-            <button className="bl-btn-add" onClick={addItem}>Add to List</button>
+            <button className="bl-btn-cancel" onClick={() => { setAdding(false); setAddText(''); }}>Cancel</button>
+            <button className="bl-btn-add" onClick={addItem} disabled={!addText.trim()}>Add to List</button>
           </div>
         </div>
+      )}
+
+      {/* Items */}
+      {sorted.length === 0 ? (
+        <div className="bl-empty">
+          {filter === 'All'
+            ? 'No bucket list items yet — add your first above!'
+            : `No ${filter.toLowerCase()} items yet.`}
+        </div>
       ) : (
-        <button className="wv-add" onClick={openAdd}>+ Add item</button>
+        <div className="bl-grid">
+          {sorted.map(item => (
+            <div
+              key={item.id}
+              className={`bl-item-card${item.completed ? ' bl-item-card--done' : ''}`}
+              style={{ borderTopColor: CAT_COLOR[item.category] }}
+            >
+              <div className="bl-item-top">
+                <button
+                  className={`bl-check${item.completed ? ' bl-check--on' : ''}`}
+                  style={item.completed ? { background: CAT_COLOR[item.category], borderColor: CAT_COLOR[item.category] } : {}}
+                  onClick={() => toggleItem(item.id)}
+                >
+                  {item.completed && <Tick />}
+                </button>
+                <button className="bl-del" onClick={() => deleteItem(item.id)}>×</button>
+              </div>
+              <input
+                className={`bl-item-input${item.completed ? ' bl-item-input--done' : ''}`}
+                value={item.text}
+                placeholder="Bucket list item…"
+                onChange={e => updateText(item.id, e.target.value)}
+              />
+              <div className="bl-item-foot">
+                <span
+                  className="bl-badge"
+                  style={{ background: `color-mix(in srgb, ${CAT_COLOR[item.category]} 12%, transparent)`, color: CAT_COLOR[item.category], borderColor: `color-mix(in srgb, ${CAT_COLOR[item.category]} 30%, transparent)` }}
+                >
+                  {CAT_EMOJI[item.category]} {item.category}
+                </span>
+                {item.completed && item.completedDate && (
+                  <span className="bl-done-date">✓ {item.completedDate}</span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       )}
 
     </section>

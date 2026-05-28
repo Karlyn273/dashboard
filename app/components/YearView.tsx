@@ -2,30 +2,18 @@
 
 import { useState } from 'react';
 
-// ── Types ────────────────────────────────────────────────────────
-
-type Category = 'Finance' | 'Health' | 'Business' | 'Personal';
-
 interface IntentionBucket {
   id:      string;
   label:   string;
-  content: string;
-}
-
-interface YearlyGoal {
-  id:        string;
-  text:      string;
-  category:  Category;
-  completed: boolean;
+  items:   string[];
 }
 
 interface YearData {
-  vision?:          string;
-  nonNegotiables?:  string;
-  mainFocus?:       string;
-  doDifferently?:   string;
-  buckets?:         IntentionBucket[];
-  goals?:           YearlyGoal[];
+  vision?:         string;
+  nonNegotiables?: string;
+  focus?:          string;
+  change?:         string;
+  buckets?:        IntentionBucket[];
 }
 
 interface Props {
@@ -33,76 +21,52 @@ interface Props {
   onChange: (updater: (prev: Record<string, unknown>) => Record<string, unknown>) => void;
 }
 
-// ── Constants ────────────────────────────────────────────────────
-
-const CATEGORIES: Category[] = ['Finance', 'Health', 'Business', 'Personal'];
-
-const CAT_COLOR: Record<Category, string> = {
-  Finance:  '#22c55e',
-  Health:   '#3b82f6',
-  Business: '#6366f1',
-  Personal: '#f43f5e',
-};
-
-const PROMPTS: Array<{
-  key:         'vision' | 'nonNegotiables' | 'mainFocus' | 'doDifferently';
-  label:       string;
+const QUESTIONS: Array<{
+  key:     keyof Pick<YearData, 'vision' | 'nonNegotiables' | 'focus' | 'change'>;
+  icon:    string;
+  title:   string;
+  guide:   string;
   placeholder: string;
 }> = [
   {
     key:         'vision',
-    label:       'My Vision for This Year',
-    placeholder: 'What does your best year look like? Who are you becoming?',
+    icon:        '+',
+    title:       'What is my life vision?',
+    guide:       'Imagine your life 5–10 years from now at its best. What do you see? Who are you? What matters most?',
+    placeholder: 'Write your answer…',
   },
   {
     key:         'nonNegotiables',
-    label:       'My Non-Negotiables',
-    placeholder: 'What will you protect no matter what?',
+    icon:        '•',
+    title:       'What are my non-negotiables?',
+    guide:       'These are the values, boundaries, and commitments you will protect no matter what this year.',
+    placeholder: 'Write your answer…',
   },
   {
-    key:         'mainFocus',
-    label:       'My Main Focus',
-    placeholder: 'If only one thing mattered this year, what would it be?',
+    key:         'focus',
+    icon:        '○',
+    title:       'What do I want to focus on?',
+    guide:       'If you could only pour energy into one or two areas this year, what would produce the most meaning and growth?',
+    placeholder: 'Write your answer…',
   },
   {
-    key:         'doDifferently',
-    label:       'What I Want to Do Differently',
-    placeholder: 'What patterns are you ready to leave behind?',
+    key:         'change',
+    icon:        '→',
+    title:       'What do I want to change?',
+    guide:       'What patterns, habits, or beliefs are you ready to leave behind? What does the next version of you look like?',
+    placeholder: 'Write your answer…',
   },
 ];
 
-// ── Icons ────────────────────────────────────────────────────────
-
-function Tick() {
-  return (
-    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5">
-      <path d="M2 6.5l2.5 2.5 5-5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function Chevron() {
-  return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-      <path d="M4 6l4 4 4-4" />
-    </svg>
-  );
-}
-
-// ── Component ────────────────────────────────────────────────────
-
 export default function YearView({ data, onChange }: Props) {
-  const [year,     setYear]     = useState(() => new Date().getFullYear());
-  const [expanded, setExpanded] = useState<Record<Category, boolean>>({
-    Finance: true, Health: true, Business: true, Personal: true,
-  });
+  const [year,         setYear]         = useState(() => new Date().getFullYear());
+  const [openGuides,   setOpenGuides]   = useState<Record<string, boolean>>({});
 
   const yearKey  = String(year);
   type YStore    = Record<string, YearData>;
   const store    = (data.years ?? {}) as YStore;
   const yearData = store[yearKey] ?? {} as YearData;
   const buckets  = yearData.buckets ?? [];
-  const goals    = yearData.goals   ?? [];
 
   const setYearData = (updates: Partial<YearData>) =>
     onChange(prev => {
@@ -110,88 +74,83 @@ export default function YearView({ data, onChange }: Props) {
       return { ...prev, years: { ...s, [yearKey]: { ...s[yearKey], ...updates } } };
     });
 
-  // ── Reflection fields ─────────────────────────────────────────
+  const setField = (key: keyof YearData, value: string) => setYearData({ [key]: value });
 
-  const setField = (key: keyof YearData, value: string) =>
-    setYearData({ [key]: value });
+  const toggleGuide = (key: string) =>
+    setOpenGuides(prev => ({ ...prev, [key]: !prev[key] }));
 
-  // ── Bucket handlers ───────────────────────────────────────────
-
+  // Bucket handlers
   const addBucket = () =>
-    setYearData({ buckets: [...buckets, { id: crypto.randomUUID(), label: '', content: '' }] });
+    setYearData({ buckets: [...buckets, { id: crypto.randomUUID(), label: '', items: [''] }] });
 
   const bucketLabel = (id: string, label: string) =>
     setYearData({ buckets: buckets.map(b => b.id === id ? { ...b, label } : b) });
 
-  const bucketContent = (id: string, content: string) =>
-    setYearData({ buckets: buckets.map(b => b.id === id ? { ...b, content } : b) });
+  const bucketItem = (id: string, idx: number, text: string) =>
+    setYearData({
+      buckets: buckets.map(b =>
+        b.id === id ? { ...b, items: b.items.map((it, i) => i === idx ? text : it) } : b,
+      ),
+    });
+
+  const addBucketItem = (id: string) =>
+    setYearData({ buckets: buckets.map(b => b.id === id ? { ...b, items: [...b.items, ''] } : b) });
 
   const delBucket = (id: string) =>
     setYearData({ buckets: buckets.filter(b => b.id !== id) });
 
-  // ── Goal handlers ─────────────────────────────────────────────
-
-  const addGoal = (cat: Category) =>
-    setYearData({ goals: [...goals, { id: crypto.randomUUID(), text: '', category: cat, completed: false }] });
-
-  const goalText = (id: string, text: string) =>
-    setYearData({ goals: goals.map(g => g.id === id ? { ...g, text } : g) });
-
-  const toggleGoal = (id: string) =>
-    setYearData({ goals: goals.map(g => g.id === id ? { ...g, completed: !g.completed } : g) });
-
-  const delGoal = (id: string) =>
-    setYearData({ goals: goals.filter(g => g.id !== id) });
-
-  const toggleExpand = (cat: Category) =>
-    setExpanded(prev => ({ ...prev, [cat]: !prev[cat] }));
-
-  // ── Render ────────────────────────────────────────────────────
-
   return (
     <section className="yv">
 
-      {/* ── Year navigation ── */}
-      <div className="yv-nav">
-        <button className="wv-nav-btn" onClick={() => setYear(y => y - 1)} aria-label="Previous year">←</button>
-        <span className="yv-year">{year}</span>
-        <button className="wv-nav-btn" onClick={() => setYear(y => y + 1)} aria-label="Next year">→</button>
+      {/* Year nav + heading */}
+      <div className="yv-heading-row">
+        <div>
+          <div className="yv-nav">
+            <button className="wv-weeknav-btn" onClick={() => setYear(y => y - 1)}>‹</button>
+            <span className="yv-year-title">{year} — Your Year</span>
+            <button className="wv-weeknav-btn" onClick={() => setYear(y => y + 1)}>›</button>
+          </div>
+          <p className="yv-subtitle">Answer these four questions to set the foundation for your year.</p>
+        </div>
       </div>
 
-      {/* ── Manifesto ── */}
-      <div className="yv-manifesto">
-        <h2 className="yv-manifesto-hd">
-          <span className="yv-hd-mark" aria-hidden="true">✦</span>
-          My {year} Manifesto
-        </h2>
-        <div className="yv-prompts-grid">
-          {PROMPTS.map(p => (
-            <div key={p.key} className="yv-prompt-card">
-              <span className="yv-prompt-label">{p.label}</span>
-              <textarea
-                className="yv-prompt-ta"
-                placeholder={p.placeholder}
-                value={(yearData[p.key] as string | undefined) ?? ''}
-                onChange={e => setField(p.key, e.target.value)}
-              />
+      {/* Four question cards — 2×2 grid */}
+      <div className="yv-questions-grid">
+        {QUESTIONS.map(q => (
+          <div key={q.key} className="yv-q-card">
+            <div className="yv-q-type-row">
+              <span className="yv-q-icon">{q.icon}</span>
+              <span className="yv-q-type">{q.key === 'vision' ? 'LIFE VISION' : q.key === 'nonNegotiables' ? 'NON-NEGOTIABLES' : q.key === 'focus' ? 'FOCUS' : 'CHANGE'}</span>
             </div>
-          ))}
-        </div>
+            <p className="yv-q-title">{q.title}</p>
+            <button className="yv-guide-toggle" onClick={() => toggleGuide(q.key)}>
+              {openGuides[q.key] ? '↑ Hide guide' : '↓ Show guide'}
+            </button>
+            {openGuides[q.key] && (
+              <p className="yv-guide-text">{q.guide}</p>
+            )}
+            <textarea
+              className="yv-q-ta"
+              placeholder={q.placeholder}
+              value={(yearData[q.key] as string | undefined) ?? ''}
+              onChange={e => setField(q.key, e.target.value)}
+            />
+          </div>
+        ))}
       </div>
 
-      {/* ── Intention Buckets ── */}
+      {/* Focus Buckets */}
       <div className="yv-buckets-section">
-        <div className="yv-section-toprow">
-          <h2 className="yv-section-hd">
-            <span className="yv-hd-mark" aria-hidden="true">◈</span>
-            Intention Buckets
-          </h2>
-          <button className="yv-outline-btn" onClick={addBucket}>+ Add bucket</button>
+        <div className="yv-buckets-header">
+          <div>
+            <h2 className="yv-buckets-title">Focus Buckets</h2>
+            <p className="yv-buckets-sub">Group your intentions, life themes — areas of life you&rsquo;re actively investing in this year</p>
+          </div>
+          <button className="yv-new-bucket-btn" onClick={addBucket}>+ New Bucket</button>
         </div>
+
         {buckets.length === 0 ? (
-          <p className="yv-section-empty">
-            Intention buckets help you name the areas you're tending this year — relationships, growth, joy, creativity, spirit. Add one to begin.
-          </p>
+          <p className="yv-empty">Add a bucket to start grouping your intentions for the year.</p>
         ) : (
           <div className="yv-buckets-grid">
             {buckets.map(b => (
@@ -203,85 +162,29 @@ export default function YearView({ data, onChange }: Props) {
                     placeholder="Name this bucket…"
                     onChange={e => bucketLabel(b.id, e.target.value)}
                   />
-                  <button className="yv-del" onClick={() => delBucket(b.id)} aria-label="Delete bucket">×</button>
+                  <button className="yv-del" onClick={() => delBucket(b.id)}>×</button>
                 </div>
-                <textarea
-                  className="yv-bucket-ta"
-                  placeholder="What does this area mean to you? What intentions do you hold here?"
-                  value={b.content}
-                  onChange={e => bucketContent(b.id, e.target.value)}
-                />
+                <ul className="yv-bucket-items">
+                  {b.items.map((item, idx) => (
+                    <li key={idx} className="yv-bucket-item">
+                      <span className="yv-bucket-bullet">·</span>
+                      <input
+                        className="yv-bucket-item-input"
+                        value={item}
+                        placeholder="Add item…"
+                        onChange={e => bucketItem(b.id, idx, e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') { e.preventDefault(); addBucketItem(b.id); }
+                        }}
+                      />
+                    </li>
+                  ))}
+                </ul>
+                <button className="yv-ghost-add" onClick={() => addBucketItem(b.id)}>+ Add item</button>
               </div>
             ))}
           </div>
         )}
-      </div>
-
-      {/* ── Yearly Goals ── */}
-      <div className="yv-goals-section">
-        <h2 className="yv-section-hd">
-          <span className="yv-hd-mark" aria-hidden="true">◎</span>
-          Yearly Goals
-        </h2>
-        <div className="yv-goals-list">
-          {CATEGORIES.map(cat => {
-            const catGoals  = goals.filter(g => g.category === cat);
-            const doneCount = catGoals.filter(g => g.completed).length;
-            const open      = expanded[cat];
-            return (
-              <div
-                key={cat}
-                className="yv-cat-card"
-                style={{ borderLeftColor: CAT_COLOR[cat] }}
-              >
-                <button
-                  className="yv-cat-toggle"
-                  onClick={() => toggleExpand(cat)}
-                  aria-expanded={open}
-                >
-                  <span className="yv-cat-dot" style={{ background: CAT_COLOR[cat] }} />
-                  <span className="yv-cat-name">{cat}</span>
-                  <span className="yv-cat-tally">{doneCount} / {catGoals.length}</span>
-                  <span className={`yv-chevron${open ? ' yv-chevron--open' : ''}`}>
-                    <Chevron />
-                  </span>
-                </button>
-
-                {open && (
-                  <div className="yv-cat-body">
-                    {catGoals.length === 0 && (
-                      <p className="yv-goal-empty">No {cat.toLowerCase()} goals yet.</p>
-                    )}
-                    <ul className="yv-goal-list">
-                      {catGoals.map(g => (
-                        <li key={g.id} className="yv-goal-row">
-                          <button
-                            className={`yv-check${g.completed ? ' yv-check--on' : ''}`}
-                            style={g.completed
-                              ? { background: CAT_COLOR[cat], borderColor: CAT_COLOR[cat] }
-                              : {}}
-                            onClick={() => toggleGoal(g.id)}
-                            aria-label={g.completed ? 'Mark incomplete' : 'Mark complete'}
-                          >
-                            {g.completed && <Tick />}
-                          </button>
-                          <input
-                            className={`yv-goal-input${g.completed ? ' yv-goal-input--done' : ''}`}
-                            value={g.text}
-                            placeholder="Goal for the year…"
-                            onChange={e => goalText(g.id, e.target.value)}
-                          />
-                          <button className="yv-del" onClick={() => delGoal(g.id)} aria-label="Remove goal">×</button>
-                        </li>
-                      ))}
-                    </ul>
-                    <button className="yv-add" onClick={() => addGoal(cat)}>+ Add goal</button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
       </div>
 
     </section>
