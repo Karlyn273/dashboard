@@ -140,7 +140,7 @@ export default function CalendarEvents({ timeMin, timeMax, groupByDay = true }: 
 
   return (
     <div className="cal-events">
-      {[...days.entries()].map(([day, dayEvents]) => (
+      {Array.from(days.entries()).map(([day, dayEvents]) => (
         <div key={day} className="cal-day-group">
           <h3 className="cal-day-hd">{fmtDayHd(day)}</h3>
           <ul className="cal-list">
