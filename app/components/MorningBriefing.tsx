@@ -46,6 +46,14 @@ const makeEmptyPriority = (): Priority => ({
   completed: false,
 });
 
+function Tick() {
+  return (
+    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5">
+      <path d="M2 6.5l2.5 2.5 5-5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export default function MorningBriefing({ data, onChange }: Props) {
   const today     = localDateKey();
   const yesterday = prevDayKey(today);
@@ -53,7 +61,6 @@ export default function MorningBriefing({ data, onChange }: Props) {
   const [generating, setGenerating] = useState(false);
   const [genError,   setGenError]   = useState('');
 
-  // Stable placeholder priorities so IDs don't change between renders
   const defaultPriorities = useRef<Priority[]>([
     makeEmptyPriority(), makeEmptyPriority(), makeEmptyPriority(),
   ]);
@@ -106,7 +113,6 @@ export default function MorningBriefing({ data, onChange }: Props) {
       .finally(() => setGenerating(false));
   }, [today, onChange]);
 
-  // Generate once per calendar day on first load
   useEffect(() => {
     if (briefing.generatedAt === today) return;
     generate();
@@ -129,32 +135,25 @@ export default function MorningBriefing({ data, onChange }: Props) {
   const dismissCarryover = (id: string) =>
     updateBriefing({ dismissedCarryovers: [...dismissed, id] });
 
-  // Stable ISO times for today — recompute only when the calendar date changes
   const [calMin, calMax] = useMemo(() => {
     const start = new Date(today + 'T00:00:00');
     const end   = new Date(today + 'T23:59:59');
     return [start.toISOString(), end.toISOString()];
   }, [today]);
 
-  const dayOfWeek = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date());
-  const fullDate  = new Intl.DateTimeFormat('en-US', {
-    month: 'long', day: 'numeric', year: 'numeric',
-  }).format(new Date());
+  const donePriorities  = priorities.filter(p => p.completed && p.text.trim()).length;
+  const totalPriorities = priorities.filter(p => p.text.trim()).length;
 
   return (
     <section className="mb">
-      {/* Header: date */}
-      <div className="mb-date-row">
-        <span className="mb-day">{dayOfWeek}</span>
-        <span className="mb-full-date">{fullDate}</span>
-      </div>
+      <div className="mb-layout">
 
-      <div className="mb-cards">
-        {/* Top row: Scripture + Priorities side by side */}
-        <div className="mb-top-row">
-          {/* Scripture + Reflection */}
-          <div className="mb-card">
-            <h2 className="mb-label">Scripture</h2>
+        {/* ── LEFT COLUMN ── */}
+        <div className="mb-col-left">
+
+          {/* Devotional / Scripture */}
+          <div className="mb-card mb-card--devotional">
+            <div className="mb-section-label">✦ Daily Devotional</div>
             {generating && <p className="mb-shimmer">Loading today's scripture…</p>}
             {genError && (
               <p className="mb-gen-error">
@@ -173,32 +172,62 @@ export default function MorningBriefing({ data, onChange }: Props) {
                 )}
               </>
             )}
+            <button className="mb-regen" onClick={generate} disabled={generating}>
+              {generating ? 'Loading…' : 'Refresh'}
+            </button>
           </div>
+
+          {/* Today's Intention */}
+          <div className="mb-card">
+            <div className="mb-section-label">Today&rsquo;s Intention</div>
+            <textarea
+              className="mb-intention"
+              placeholder="What do you want to hold onto today?"
+              value={briefing.intention ?? ''}
+              onChange={e => updateBriefing({ intention: e.target.value })}
+            />
+          </div>
+
+          {/* Carryovers */}
+          {carryovers.length > 0 && (
+            <div className="mb-card">
+              <div className="mb-section-label">From Yesterday</div>
+              <ul className="mb-carryover-list">
+                {carryovers.map(task => (
+                  <li key={task.id} className="mb-carryover-item">
+                    <span className="mb-carryover-badge">carried over</span>
+                    <span className="mb-carryover-text">{task.text}</span>
+                    <div className="mb-carryover-actions">
+                      <button className="mb-btn mb-btn--include" onClick={() => includeCarryover(task)}>Include</button>
+                      <button className="mb-btn mb-btn--dismiss" onClick={() => dismissCarryover(task.id)}>Dismiss</button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        {/* ── RIGHT COLUMN ── */}
+        <div className="mb-col-right">
 
           {/* Top 3 Priorities */}
           <div className="mb-card">
             <div className="mb-task-header">
-              <h2 className="mb-label" style={{ marginBottom: 0 }}>Top 3 Priorities</h2>
-              {priorities.some(p => p.text.trim()) && (
-                <span className="mb-task-count">
-                  {priorities.filter(p => p.completed && p.text.trim()).length}/{priorities.filter(p => p.text.trim()).length} done
-                </span>
+              <div className="mb-section-label" style={{ marginBottom: 0 }}>Top 3 Priorities</div>
+              {totalPriorities > 0 && (
+                <span className="mb-task-count">{donePriorities}/{totalPriorities} done</span>
               )}
             </div>
-            {priorities.some(p => p.text.trim()) && (
-              <div className="wv-progress-track" style={{ margin: '0.5rem 0 0.75rem' }}>
+            {totalPriorities > 0 && (
+              <div className="mb-progress-track">
                 <div
-                  className="wv-progress-fill"
-                  style={{
-                    width: `${Math.round(
-                      (priorities.filter(p => p.completed && p.text.trim()).length /
-                       priorities.filter(p => p.text.trim()).length) * 100
-                    )}%`,
-                  }}
+                  className="mb-progress-fill"
+                  style={{ width: `${Math.round((donePriorities / totalPriorities) * 100)}%` }}
                 />
               </div>
             )}
-            <ol className="mb-priority-list" style={{ marginTop: priorities.some(p => p.text.trim()) ? 0 : '0.875rem' }}>
+            <ol className="mb-priority-list">
               {priorities.slice(0, 3).map((p, i) => (
                 <li key={p.id} className="mb-priority-item">
                   <button
@@ -206,11 +235,7 @@ export default function MorningBriefing({ data, onChange }: Props) {
                     onClick={() => togglePriority(i)}
                     aria-label={p.completed ? 'Mark incomplete' : 'Mark complete'}
                   >
-                    {p.completed && (
-                      <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <path d="M2 6.5l2.5 2.5 5-5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    )}
+                    {p.completed && <Tick />}
                   </button>
                   <input
                     type="text"
@@ -223,52 +248,13 @@ export default function MorningBriefing({ data, onChange }: Props) {
               ))}
             </ol>
           </div>
-        </div>
 
-        {/* Today's Intention */}
-        <div className="mb-card">
-          <h2 className="mb-label">Today&rsquo;s Intention</h2>
-          <textarea
-            className="mb-intention"
-            placeholder="What do you want to hold onto today?"
-            value={briefing.intention ?? ''}
-            onChange={e => updateBriefing({ intention: e.target.value })}
-          />
-        </div>
-
-        {/* Carryovers from yesterday */}
-        {carryovers.length > 0 && (
-          <div className="mb-card">
-            <h2 className="mb-label">From Yesterday</h2>
-            <ul className="mb-carryover-list">
-              {carryovers.map(task => (
-                <li key={task.id} className="mb-carryover-item">
-                  <span className="mb-carryover-badge">carried over</span>
-                  <span className="mb-carryover-text">{task.text}</span>
-                  <div className="mb-carryover-actions">
-                    <button
-                      className="mb-btn mb-btn--include"
-                      onClick={() => includeCarryover(task)}
-                    >
-                      Include
-                    </button>
-                    <button
-                      className="mb-btn mb-btn--dismiss"
-                      onClick={() => dismissCarryover(task.id)}
-                    >
-                      Dismiss
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+          {/* Today's Schedule */}
+          <div className="mb-card mb-card--schedule">
+            <div className="mb-section-label">Today&rsquo;s Schedule</div>
+            <CalendarEvents timeMin={calMin} timeMax={calMax} groupByDay={false} />
           </div>
-        )}
 
-        {/* Today's calendar */}
-        <div className="mb-card">
-          <h2 className="mb-label">Today&rsquo;s Schedule</h2>
-          <CalendarEvents timeMin={calMin} timeMax={calMax} groupByDay={false} />
         </div>
       </div>
     </section>

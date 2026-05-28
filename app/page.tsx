@@ -11,27 +11,28 @@ import YearView        from './components/YearView';
 type SaveStatus = 'saved' | 'pending' | 'saving' | 'error';
 type Tab        = 'morning' | 'week' | 'quarter' | 'habits' | 'bucket' | 'year';
 
-const STATUS_LABEL: Record<SaveStatus, string> = {
-  saved:   'Saved',
-  pending: 'Unsaved changes',
-  saving:  'Saving…',
-  error:   'Error saving',
-};
-
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'morning', label: 'Morning'     },
-  { id: 'week',    label: 'Week'       },
-  { id: 'quarter', label: 'Quarter'    },
-  { id: 'habits',  label: 'Habits'     },
-  { id: 'bucket',  label: 'Bucket List' },
+  { id: 'morning', label: 'Daily'       },
+  { id: 'week',    label: 'Week'        },
+  { id: 'quarter', label: 'Quarter'     },
+  { id: 'habits',  label: 'Habits'      },
   { id: 'year',    label: 'Year'        },
+  { id: 'bucket',  label: 'Bucket List' },
 ];
+
+function getDayAndDate() {
+  const now = new Date();
+  const day  = now.toLocaleDateString('en-US', { weekday: 'long' });
+  const date = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  return { day, date };
+}
 
 export default function DashboardPage() {
   const [data,   setData]   = useState<Record<string, unknown> | null>(null);
   const [status, setStatus] = useState<SaveStatus>('saved');
   const [tab,    setTab]    = useState<Tab>('morning');
   const saveTimer           = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { day, date }       = getDayAndDate();
 
   useEffect(() => {
     fetch('/api/dashboard')
@@ -83,7 +84,10 @@ export default function DashboardPage() {
   return (
     <div className="dashboard">
       <header className="header">
-        <h1>Dashboard</h1>
+        <div className="header-left">
+          <h1 className="header-name">Hey Karlyn <span className="header-diamond">✦</span></h1>
+          <p className="header-date">{day}, {date}</p>
+        </div>
         <nav className="tabs" aria-label="Dashboard sections">
           {TABS.map(t => (
             <button
@@ -95,9 +99,11 @@ export default function DashboardPage() {
             </button>
           ))}
         </nav>
-        <span className={`status status--${status}`}>{STATUS_LABEL[status]}</span>
+        <span className={`status status--${status}`}>
+          {{ saved: '✓ Saved', pending: '…', saving: 'Saving', error: 'Error' }[status]}
+        </span>
       </header>
-      <div className="greeting">Hey, Karlyn!</div>
+
       <main className="main">
         {tab === 'morning' && <MorningBriefing data={data} onChange={updateData} />}
         {tab === 'week'    && <WeekView        data={data} onChange={updateData} />}
