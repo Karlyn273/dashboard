@@ -3,10 +3,11 @@ import { exchangeCode } from '@/lib/googleAuth';
 import { loadData, saveData } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
+  const reqUrl = new URL(request.url);
+  const { searchParams } = reqUrl;
   const code  = searchParams.get('code');
   const error = searchParams.get('error');
-  const base  = process.env.BASE_URL ?? 'http://localhost:3000';
+  const base  = `${reqUrl.protocol}//${reqUrl.host}`;
 
   if (error || !code) {
     return NextResponse.redirect(`${base}/`);
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const tokens = await exchangeCode(code);
+    const tokens = await exchangeCode(code, base);
     const data   = await loadData(userId);
     await saveData(userId, { ...(data as Record<string, unknown>), _googleTokens: tokens });
     return NextResponse.redirect(`${base}/`);

@@ -8,14 +8,14 @@ export interface GoogleTokens {
   expires_at:    number; // ms since epoch
 }
 
-function callbackUrl(): string {
-  return `${process.env.BASE_URL ?? 'http://localhost:3000'}/api/auth/google/callback`;
+function callbackUrl(base: string): string {
+  return `${base}/api/auth/google/callback`;
 }
 
-export function buildAuthUrl(): string {
+export function buildAuthUrl(base: string): string {
   const params = new URLSearchParams({
     client_id:     process.env.GOOGLE_CLIENT_ID!,
-    redirect_uri:  callbackUrl(),
+    redirect_uri:  callbackUrl(base),
     response_type: 'code',
     scope:         SCOPES,
     access_type:   'offline',
@@ -24,7 +24,7 @@ export function buildAuthUrl(): string {
   return `${GOOGLE_AUTH_URL}?${params}`;
 }
 
-export async function exchangeCode(code: string): Promise<GoogleTokens> {
+export async function exchangeCode(code: string, base: string): Promise<GoogleTokens> {
   const res = await fetch(GOOGLE_TOKEN_URL, {
     method:  'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -32,7 +32,7 @@ export async function exchangeCode(code: string): Promise<GoogleTokens> {
       code,
       client_id:     process.env.GOOGLE_CLIENT_ID!,
       client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-      redirect_uri:  callbackUrl(),
+      redirect_uri:  callbackUrl(base),
       grant_type:    'authorization_code',
     }),
   });
