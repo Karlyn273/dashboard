@@ -4,9 +4,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import MorningBriefing from './components/MorningBriefing';
 import WeekView        from './components/WeekView';
 import QuarterView     from './components/QuarterView';
+import HabitTracker    from './components/HabitTracker';
 
 type SaveStatus = 'saved' | 'pending' | 'saving' | 'error';
-type Tab        = 'morning' | 'week' | 'quarter';
+type Tab        = 'morning' | 'week' | 'quarter' | 'habits';
 
 const STATUS_LABEL: Record<SaveStatus, string> = {
   saved:   'Saved',
@@ -19,6 +20,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'morning', label: 'Morning' },
   { id: 'week',    label: 'Week'    },
   { id: 'quarter', label: 'Quarter' },
+  { id: 'habits',  label: 'Habits'  },
 ];
 
 export default function DashboardPage() {
@@ -95,6 +97,7 @@ export default function DashboardPage() {
         {tab === 'morning' && <MorningBriefing data={data} onChange={updateData} />}
         {tab === 'week'    && <WeekView        data={data} onChange={updateData} />}
         {tab === 'quarter' && <QuarterView     data={data} onChange={updateData} />}
+        {tab === 'habits'  && <HabitTracker    data={data} onChange={updateData} />}
       </main>
     </div>
   );
