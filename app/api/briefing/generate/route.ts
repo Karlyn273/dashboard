@@ -33,7 +33,7 @@ export async function POST() {
           content:
             `Scripture: "${text}" — ${reference}\n\n` +
             `Write a 2–3 sentence devotional reflection for high-achieving women navigating daily pressure, perfectionism, self-doubt, or the tension between striving and resting. ` +
-            `Be warm, grounding, and speak directly to lived experience. No greeting or sign-off — just the reflection.`,
+            `Be warm, grounding, and speak directly to lived experience. No greeting, no sign-off, no title, no markdown formatting — plain prose only.`,
         },
       ],
     });
