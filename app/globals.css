@@ -391,6 +391,37 @@ body::before {
   color: var(--sand);
 }
 
+/* Task progress bar (shared by WeekView and MorningBriefing) */
+.wv-task-header,
+.mb-task-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.wv-task-count,
+.mb-task-count {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.wv-progress-track {
+  height: 0.3rem;
+  background: rgba(0, 0, 0, 0.07);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.wv-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 9999px;
+  transition: width 0.4s ease;
+  min-width: 0;
+}
+
 /* ── Tab navigation ───────────────────────────────────────────── */
 
 .tabs {

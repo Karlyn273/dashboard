@@ -177,8 +177,28 @@ export default function MorningBriefing({ data, onChange }: Props) {
 
           {/* Top 3 Priorities */}
           <div className="mb-card">
-            <h2 className="mb-label">Top 3 Priorities</h2>
-            <ol className="mb-priority-list">
+            <div className="mb-task-header">
+              <h2 className="mb-label" style={{ marginBottom: 0 }}>Top 3 Priorities</h2>
+              {priorities.some(p => p.text.trim()) && (
+                <span className="mb-task-count">
+                  {priorities.filter(p => p.completed && p.text.trim()).length}/{priorities.filter(p => p.text.trim()).length} done
+                </span>
+              )}
+            </div>
+            {priorities.some(p => p.text.trim()) && (
+              <div className="wv-progress-track" style={{ margin: '0.5rem 0 0.75rem' }}>
+                <div
+                  className="wv-progress-fill"
+                  style={{
+                    width: `${Math.round(
+                      (priorities.filter(p => p.completed && p.text.trim()).length /
+                       priorities.filter(p => p.text.trim()).length) * 100
+                    )}%`,
+                  }}
+                />
+              </div>
+            )}
+            <ol className="mb-priority-list" style={{ marginTop: priorities.some(p => p.text.trim()) ? 0 : '0.875rem' }}>
               {priorities.slice(0, 3).map((p, i) => (
                 <li key={p.id} className="mb-priority-item">
                   <button

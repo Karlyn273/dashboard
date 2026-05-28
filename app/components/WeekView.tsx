@@ -266,8 +266,23 @@ export default function WeekView({ data, onChange }: Props) {
 
         {/* ── Tasks ── */}
         <div className="wv-card">
-          <h2 className="wv-label">Weekly Tasks</h2>
-          <ul className="wv-list">
+          <div className="wv-task-header">
+            <h2 className="wv-label" style={{ marginBottom: 0 }}>Weekly Tasks</h2>
+            {tasks.length > 0 && (
+              <span className="wv-task-count">
+                {tasks.filter(t => t.completed).length}/{tasks.length} complete
+              </span>
+            )}
+          </div>
+          {tasks.length > 0 && (
+            <div className="wv-progress-track">
+              <div
+                className="wv-progress-fill"
+                style={{ width: `${Math.round((tasks.filter(t => t.completed).length / tasks.length) * 100)}%` }}
+              />
+            </div>
+          )}
+          <ul className="wv-list" style={{ marginTop: '0.75rem' }}>
             {tasks.map(t => (
               <li key={t.id} className="wv-item">
                 <button
