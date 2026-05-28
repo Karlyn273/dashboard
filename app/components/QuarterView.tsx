@@ -2,8 +2,6 @@
 
 import { useState } from 'react';
 
-// ── Types ────────────────────────────────────────────────────────
-
 type Category = 'Finance' | 'Health' | 'Business' | 'Personal';
 
 interface QuarterlyGoal {
@@ -11,22 +9,14 @@ interface QuarterlyGoal {
   text: string;
   category: Category;
   completed: boolean;
-  weeklyBreakdown: Record<string, string>; // Monday YYYY-MM-DD → note text
+  weeklyBreakdown: Record<string, string>;
 }
 
-interface CreditCard {
-  id: string;
-  name: string;
-  currentBalance: number;
-  originalBalance: number;
-  creditLimit: number;
-}
-
-interface SavingsGoal {
-  id: string;
-  name: string;
-  targetAmount: number;
-  currentAmount: number;
+interface FinanceData {
+  debtPaid?:    number;
+  debtTotal?:   number;
+  savedAmount?: number;
+  savingsGoal?: number;
 }
 
 interface ParkingItem {
@@ -53,24 +43,14 @@ interface Book {
   finishedDate?:    string;
 }
 
-interface QuarterData  { goals?: QuarterlyGoal[]; }
-interface FinanceData  { cards?: CreditCard[]; savingsGoals?: SavingsGoal[]; }
+interface HabitLog { habitId: string; date: string; }
 
 interface Props {
   data:     Record<string, unknown>;
   onChange: (updater: (prev: Record<string, unknown>) => Record<string, unknown>) => void;
 }
 
-// ── Quarter helpers ──────────────────────────────────────────────
-
 const CATEGORIES: Category[] = ['Finance', 'Health', 'Business', 'Personal'];
-
-const CAT_COLOR: Record<Category, string> = {
-  Finance:  '#22c55e',
-  Health:   '#3b82f6',
-  Business: '#6366f1',
-  Personal: '#f43f5e',
-};
 
 function currentQuarterKey(): string {
   const now = new Date();
@@ -87,44 +67,11 @@ function shiftQuarter(key: string, delta: number): string {
 }
 
 function quarterLabel(key: string): string {
-  const [year, q]  = key.split('-Q');
-  const ranges     = [['Jan','Mar'],['Apr','Jun'],['Jul','Sep'],['Oct','Dec']];
-  const [s, e]     = ranges[parseInt(q) - 1];
+  const [year, q] = key.split('-Q');
+  const ranges    = [['Jan','Mar'],['Apr','Jun'],['Jul','Sep'],['Oct','Dec']];
+  const [s, e]    = ranges[parseInt(q) - 1];
   return `${s} – ${e} ${year}`;
 }
-
-interface WeekEntry { key: string; label: string; }
-
-function getQuarterWeeks(quarterKey: string): WeekEntry[] {
-  const [yearStr, qStr] = quarterKey.split('-Q');
-  const year       = parseInt(yearStr);
-  const q          = parseInt(qStr);
-  const startMonth = (q - 1) * 3;
-
-  const qStart = new Date(year, startMonth, 1);
-  const qEnd   = new Date(year, startMonth + 3, 0); // last day of quarter
-
-  // First Monday on or after qStart
-  const first = new Date(qStart);
-  const skip  = (8 - first.getDay()) % 7; // 0 if already Monday
-  if (skip) first.setDate(first.getDate() + skip);
-
-  const entries: WeekEntry[] = [];
-  let cur = new Date(first);
-  let n   = 1;
-  while (cur <= qEnd) {
-    entries.push({
-      key:   cur.toLocaleDateString('en-CA'),
-      label: `Wk ${n} · ${cur.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
-    });
-    cur = new Date(cur);
-    cur.setDate(cur.getDate() + 7);
-    n++;
-  }
-  return entries;
-}
-
-// ── Utility ──────────────────────────────────────────────────────
 
 function pct(value: number, total: number): number {
   if (total <= 0) return 0;
@@ -134,14 +81,12 @@ function pct(value: number, total: number): number {
 function $$(n: number): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency', currency: 'USD', maximumFractionDigits: 0,
-  }).format(n);
+  }).format(n || 0);
 }
 
 function numVal(s: string): number { return parseFloat(s) || 0; }
 
 const COVER_URL = (id: number) => `https://covers.openlibrary.org/b/id/${id}-M.jpg`;
-
-// ── Icons ────────────────────────────────────────────────────────
 
 function Tick() {
   return (
@@ -151,412 +96,238 @@ function Tick() {
   );
 }
 
-function ChevronDown() {
-  return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-      <path d="M4 6l4 4 4-4" />
-    </svg>
-  );
+// Build last-13-weeks gym data from habitLogs
+function getGymWeeks(habitLogs: HabitLog[]): number[] {
+  const logDates = new Set(habitLogs.map(l => l.date));
+  const weeks: number[] = [];
+  const today = new Date();
+  for (let w = 12; w >= 0; w--) {
+    let count = 0;
+    for (let d = 0; d < 7; d++) {
+      const day = new Date(today);
+      day.setDate(today.getDate() - w * 7 - d);
+      if (logDates.has(day.toLocaleDateString('en-CA'))) count++;
+    }
+    weeks.push(count);
+  }
+  return weeks;
 }
 
-// ── Component ────────────────────────────────────────────────────
-
 export default function QuarterView({ data, onChange }: Props) {
-  const [qKey,    setQKey]    = useState(currentQuarterKey);
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [qKey, setQKey] = useState(currentQuarterKey);
 
-  const qWeeks = getQuarterWeeks(qKey);
+  type QStore = Record<string, { goals?: QuarterlyGoal[] }>;
+  const qStore  = ((data.quarters ?? {}) as QStore);
+  const quarter = qStore[qKey] ?? {};
+  const goals   = quarter.goals ?? [];
 
-  type QStore = Record<string, QuarterData>;
-  const qStore   = ((data.quarters   ?? {}) as QStore);
-  const quarter  = qStore[qKey] ?? {} as QuarterData;
-  const goals    = quarter.goals ?? [];
-
-  const finance  = ((data.finance    ?? {}) as FinanceData);
-  const cards    = finance.cards        ?? [];
-  const savings  = finance.savingsGoals ?? [];
+  const finance  = ((data.finance     ?? {}) as FinanceData);
   const parking  = ((data.parkingLot  ?? []) as ParkingItem[]);
   const achieves = ((data.achievements ?? []) as Achievement[]);
+  const books    = ((data.books        ?? []) as Book[]);
+  const habitLogs = ((data.habitLogs   ?? []) as HabitLog[]);
 
   const qAchieves = achieves.filter(a => a.quarter === qKey);
+  const qBooks    = books.filter(b => b.status === 'finished' && b.finishedQuarter === qKey);
+  const gymWeeks  = getGymWeeks(habitLogs);
+  const maxGym    = Math.max(...gymWeeks, 1);
 
-  const books   = ((data.books ?? []) as Book[]);
-  const qBooks  = books.filter(b => b.status === 'finished' && b.finishedQuarter === qKey);
+  const debtPct    = pct(finance.debtPaid ?? 0,    finance.debtTotal   ?? 0);
+  const savingsPct = pct(finance.savedAmount ?? 0, finance.savingsGoal ?? 0);
+  const netWorth   = (finance.savedAmount ?? 0) - ((finance.debtTotal ?? 0) - (finance.debtPaid ?? 0));
 
-  // ── Quarter goals ─────────────────────────────────────────────
-
-  const setQGoals = (goals: QuarterlyGoal[]) =>
+  // ── Goals
+  const setGoals = (g: QuarterlyGoal[]) =>
     onChange(prev => {
       const s = ((prev.quarters ?? {}) as QStore);
-      return { ...prev, quarters: { ...s, [qKey]: { ...s[qKey], goals } } };
+      return { ...prev, quarters: { ...s, [qKey]: { ...s[qKey], goals: g } } };
     });
 
-  const addGoal = (cat: Category) =>
-    setQGoals([...goals, {
-      id: crypto.randomUUID(), text: '', category: cat,
-      completed: false, weeklyBreakdown: {},
-    }]);
+  const addGoal    = (cat: Category) => setGoals([...goals, { id: crypto.randomUUID(), text: '', category: cat, completed: false, weeklyBreakdown: {} }]);
+  const goalField  = (id: string, text: string) => setGoals(goals.map(g => g.id === id ? { ...g, text } : g));
+  const toggleGoal = (id: string) => setGoals(goals.map(g => g.id === id ? { ...g, completed: !g.completed } : g));
+  const delGoal    = (id: string) => setGoals(goals.filter(g => g.id !== id));
 
-  const goalField = (id: string, text: string) =>
-    setQGoals(goals.map(g => g.id === id ? { ...g, text } : g));
-
-  const toggleGoal = (id: string) =>
-    setQGoals(goals.map(g => g.id === id ? { ...g, completed: !g.completed } : g));
-
-  const delGoal = (id: string) =>
-    setQGoals(goals.filter(g => g.id !== id));
-
-  const setWeekNote = (goalId: string, weekKey: string, text: string) =>
-    setQGoals(goals.map(g =>
-      g.id === goalId
-        ? { ...g, weeklyBreakdown: { ...g.weeklyBreakdown, [weekKey]: text } }
-        : g,
-    ));
-
-  const toggleExpand = (id: string) =>
-    setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
-
-  // ── Finance ───────────────────────────────────────────────────
-
+  // ── Finance
   const setFinance = (updates: Partial<FinanceData>) =>
-    onChange(prev => ({
-      ...prev,
-      finance: { ...((prev.finance ?? {}) as FinanceData), ...updates },
-    }));
+    onChange(prev => ({ ...prev, finance: { ...((prev.finance ?? {}) as FinanceData), ...updates } }));
 
-  const addCard = () =>
-    setFinance({ cards: [...cards, { id: crypto.randomUUID(), name: '', currentBalance: 0, originalBalance: 0, creditLimit: 0 }] });
+  // ── Parking lot
+  const addParking    = () => onChange(prev => ({ ...prev, parkingLot: [...parking, { id: crypto.randomUUID(), text: '', addedDate: new Date().toLocaleDateString('en-CA') }] }));
+  const parkingField  = (id: string, text: string) => onChange(prev => ({ ...prev, parkingLot: parking.map(p => p.id === id ? { ...p, text } : p) }));
+  const delParking    = (id: string) => onChange(prev => ({ ...prev, parkingLot: parking.filter(p => p.id !== id) }));
 
-  const cardField = (id: string, field: keyof CreditCard, val: string | number) =>
-    setFinance({ cards: cards.map(c => c.id === id ? { ...c, [field]: val } : c) });
-
-  const delCard = (id: string) =>
-    setFinance({ cards: cards.filter(c => c.id !== id) });
-
-  const addSavings = () =>
-    setFinance({ savingsGoals: [...savings, { id: crypto.randomUUID(), name: '', targetAmount: 0, currentAmount: 0 }] });
-
-  const savingsField = (id: string, field: keyof SavingsGoal, val: string | number) =>
-    setFinance({ savingsGoals: savings.map(s => s.id === id ? { ...s, [field]: val } : s) });
-
-  const delSavings = (id: string) =>
-    setFinance({ savingsGoals: savings.filter(s => s.id !== id) });
-
-  // ── Parking lot ───────────────────────────────────────────────
-
-  const addParking = () =>
-    onChange(prev => ({
-      ...prev,
-      parkingLot: [...parking, { id: crypto.randomUUID(), text: '', addedDate: new Date().toLocaleDateString('en-CA') }],
-    }));
-
-  const parkingField = (id: string, text: string) =>
-    onChange(prev => ({
-      ...prev,
-      parkingLot: parking.map(p => p.id === id ? { ...p, text } : p),
-    }));
-
-  const delParking = (id: string) =>
-    onChange(prev => ({ ...prev, parkingLot: parking.filter(p => p.id !== id) }));
-
-  // ── Achievements ──────────────────────────────────────────────
-
-  const addAchieve = () =>
-    onChange(prev => ({
-      ...prev,
-      achievements: [...achieves, {
-        id: crypto.randomUUID(), text: '',
-        date: new Date().toLocaleDateString('en-CA'),
-        quarter: qKey,
-      }],
-    }));
-
-  const achieveField = (id: string, text: string) =>
-    onChange(prev => ({
-      ...prev,
-      achievements: achieves.map(a => a.id === id ? { ...a, text } : a),
-    }));
-
-  const delAchieve = (id: string) =>
-    onChange(prev => ({ ...prev, achievements: achieves.filter(a => a.id !== id) }));
-
-  // ── Render ────────────────────────────────────────────────────
+  // ── Achievements
+  const addAchieve   = () => onChange(prev => ({ ...prev, achievements: [...achieves, { id: crypto.randomUUID(), text: '', date: new Date().toLocaleDateString('en-CA'), quarter: qKey }] }));
+  const achieveField = (id: string, text: string) => onChange(prev => ({ ...prev, achievements: achieves.map(a => a.id === id ? { ...a, text } : a) }));
+  const delAchieve   = (id: string) => onChange(prev => ({ ...prev, achievements: achieves.filter(a => a.id !== id) }));
 
   return (
     <section className="qv">
 
-      {/* Quarter navigation */}
-      <div className="qv-nav">
-        <button className="wv-nav-btn" onClick={() => setQKey(k => shiftQuarter(k, -1))} aria-label="Previous quarter">←</button>
-        <div className="qv-nav-center">
-          <span className="qv-nav-key">{qKey}</span>
-          <span className="qv-nav-range">{quarterLabel(qKey)}</span>
+      {/* Quarter nav */}
+      <div className="qv-topnav">
+        <button className="wv-weeknav-btn" onClick={() => setQKey(k => shiftQuarter(k, -1))}>‹</button>
+        <div className="qv-topnav-center">
+          <span className="qv-topnav-key">{qKey}</span>
+          <span className="qv-topnav-range">{quarterLabel(qKey)}</span>
         </div>
-        <button className="wv-nav-btn" onClick={() => setQKey(k => shiftQuarter(k, 1))} aria-label="Next quarter">→</button>
+        <button className="wv-weeknav-btn" onClick={() => setQKey(k => shiftQuarter(k, 1))}>›</button>
       </div>
 
-      {/* ── Goals 2×2 grid ── */}
-      <div className="qv-goals-grid">
+      {/* Top row: Gym chart + Finance */}
+      <div className="qv-top-row">
+
+        {/* Gym consistency chart */}
+        <div className="qv-card">
+          <div className="qv-section-label">GYM CONSISTENCY</div>
+          <div className="qv-gym-sub">Last 13 weeks</div>
+          <div className="qv-gym-chart">
+            {gymWeeks.map((count, i) => (
+              <div key={i} className="qv-gym-col">
+                <div
+                  className="qv-gym-bar"
+                  style={{ height: `${Math.max(4, (count / maxGym) * 100)}%`, opacity: i === 12 ? 1 : 0.6 + (i / 12) * 0.4 }}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="qv-gym-axis">
+            <span>13 weeks ago</span>
+            <span>This week</span>
+          </div>
+        </div>
+
+        {/* Finance tracker */}
+        <div className="qv-card">
+          <div className="qv-section-label">FINANCES — {qKey}</div>
+          <div className="qv-finance-sub">Debt paydown &amp; savings progress</div>
+
+          <div className="qv-finance-row">
+            <span className="qv-finance-label">Debt Paid Off</span>
+            <div className="qv-finance-nums">
+              <span className="qv-finance-pct">{Math.round(debtPct)}% paid</span>
+              <span className="qv-finance-rem">{$$(( finance.debtTotal ?? 0) - (finance.debtPaid ?? 0))} remaining</span>
+            </div>
+            <div className="qv-bar-track"><div className="qv-bar-fill qv-bar--green" style={{ width: `${debtPct}%` }} /></div>
+          </div>
+
+          <div className="qv-finance-inputs">
+            <label className="qv-fi-field">
+              <span>Paid off</span>
+              <input type="number" min="0" className="qv-num-input" value={finance.debtPaid || ''} placeholder="0" onChange={e => setFinance({ debtPaid: numVal(e.target.value) })} />
+            </label>
+            <label className="qv-fi-field">
+              <span>Total debt</span>
+              <input type="number" min="0" className="qv-num-input" value={finance.debtTotal || ''} placeholder="0" onChange={e => setFinance({ debtTotal: numVal(e.target.value) })} />
+            </label>
+          </div>
+
+          <div className="qv-finance-row" style={{ marginTop: '0.875rem' }}>
+            <span className="qv-finance-label">Savings Progress</span>
+            <div className="qv-finance-nums">
+              <span className="qv-finance-pct">{Math.round(savingsPct)}% of goal</span>
+              <span className="qv-finance-rem">{$$(finance.savingsGoal ?? 0)} goal</span>
+            </div>
+            <div className="qv-bar-track"><div className="qv-bar-fill qv-bar--accent" style={{ width: `${savingsPct}%` }} /></div>
+          </div>
+
+          <div className="qv-finance-inputs">
+            <label className="qv-fi-field">
+              <span>Saved</span>
+              <input type="number" min="0" className="qv-num-input" value={finance.savedAmount || ''} placeholder="0" onChange={e => setFinance({ savedAmount: numVal(e.target.value) })} />
+            </label>
+            <label className="qv-fi-field">
+              <span>Goal</span>
+              <input type="number" min="0" className="qv-num-input" value={finance.savingsGoal || ''} placeholder="0" onChange={e => setFinance({ savingsGoal: numVal(e.target.value) })} />
+            </label>
+          </div>
+
+          <div className="qv-networth">
+            <span className="qv-networth-label">Net Worth (savings – debt)</span>
+            <span className={`qv-networth-val${netWorth >= 0 ? ' qv-networth-val--pos' : ' qv-networth-val--neg'}`}>
+              {$$(netWorth)}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Quarterly Goals — 4 columns */}
+      <div className="qv-goals-4col">
         {CATEGORIES.map(cat => {
           const catGoals = goals.filter(g => g.category === cat);
+          const done     = catGoals.filter(g => g.completed).length;
           return (
-            <div
-              key={cat}
-              className="qv-card qv-cat-card"
-              style={{ borderLeftColor: CAT_COLOR[cat] }}
-            >
-              <h2 className="qv-cat-header">
-                <span className="qv-cat-dot" style={{ background: CAT_COLOR[cat] }} />
-                {cat}
-              </h2>
-              <ul className="qv-goal-list">
+            <div key={cat} className="qv-card qv-goals-col">
+              <div className="qv-goals-col-hd">
+                <span className="qv-goals-col-title">{cat}</span>
+                {catGoals.length > 0 && (
+                  <span className="qv-goals-col-count">{done}/{catGoals.length}</span>
+                )}
+              </div>
+              {catGoals.length === 0 && (
+                <p className="qv-no-goals">No goals yet</p>
+              )}
+              <ul className="qv-col-list">
                 {catGoals.map(goal => (
-                  <li key={goal.id}>
-                    <div className="qv-goal-row">
-                      <button
-                        className={`wv-check${goal.completed ? ' wv-check--on' : ''}`}
-                        onClick={() => toggleGoal(goal.id)}
-                        aria-label={goal.completed ? 'Uncheck' : 'Check'}
-                      >
-                        {goal.completed && <Tick />}
-                      </button>
-                      <input
-                        className={`qv-goal-input${goal.completed ? ' qv-goal-input--done' : ''}`}
-                        value={goal.text}
-                        placeholder="Goal…"
-                        onChange={e => goalField(goal.id, e.target.value)}
-                      />
-                      <button
-                        className={`qv-expand-btn${expanded[goal.id] ? ' qv-expand-btn--open' : ''}`}
-                        onClick={() => toggleExpand(goal.id)}
-                        aria-label="Toggle weekly breakdown"
-                      >
-                        <ChevronDown />
-                      </button>
-                      <button className="wv-del" onClick={() => delGoal(goal.id)} aria-label="Remove">×</button>
-                    </div>
-
-                    {/* Weekly breakdown panel */}
-                    {expanded[goal.id] && (
-                      <div className="qv-breakdown">
-                        <p className="qv-breakdown-hd">Week-by-week breakdown</p>
-                        <ul className="qv-week-list">
-                          {qWeeks.map(({ key, label }) => (
-                            <li key={key} className="qv-week-row">
-                              <span className="qv-week-lbl">{label}</span>
-                              <input
-                                className="qv-week-input"
-                                value={goal.weeklyBreakdown?.[key] ?? ''}
-                                placeholder="Action or milestone…"
-                                onChange={e => setWeekNote(goal.id, key, e.target.value)}
-                              />
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                  <li key={goal.id} className="qv-col-item">
+                    <button
+                      className={`wv-check${goal.completed ? ' wv-check--on' : ''}`}
+                      onClick={() => toggleGoal(goal.id)}
+                    >
+                      {goal.completed && <Tick />}
+                    </button>
+                    <input
+                      className={`qv-goal-input${goal.completed ? ' qv-goal-input--done' : ''}`}
+                      value={goal.text}
+                      placeholder="Add goal…"
+                      onChange={e => goalField(goal.id, e.target.value)}
+                    />
+                    <button className="wv-del" onClick={() => delGoal(goal.id)}>×</button>
                   </li>
                 ))}
               </ul>
-              <button className="wv-add" onClick={() => addGoal(cat)}>+ Add goal</button>
+              <button className="wv-ghost-add" onClick={() => addGoal(cat)}>+ Add goal</button>
             </div>
           );
         })}
       </div>
 
-      {/* ── Finance tracker ── */}
-      <div className="qv-card">
-        <h2 className="qv-section-hd">Finance Tracker</h2>
-
-        {/* Credit cards */}
-        <h3 className="qv-sub-hd">Credit Cards</h3>
-        {cards.length === 0 && <p className="qv-empty">No cards added yet.</p>}
-        <ul className="qv-finance-list">
-          {cards.map(card => {
-            const payoffPct = pct(card.originalBalance - card.currentBalance, card.originalBalance);
-            const utilPct   = pct(card.currentBalance, card.creditLimit);
-            return (
-              <li key={card.id} className="qv-cc-item">
-                <div className="qv-cc-header">
-                  <input
-                    className="qv-cc-name"
-                    value={card.name}
-                    placeholder="Card name"
-                    onChange={e => cardField(card.id, 'name', e.target.value)}
-                  />
-                  <button className="wv-del" onClick={() => delCard(card.id)} aria-label="Remove card">×</button>
-                </div>
-                <div className="qv-num-grid">
-                  <label className="qv-num-field">
-                    <span>Current balance</span>
-                    <input
-                      type="number" min="0" step="1"
-                      className="qv-num-input"
-                      value={card.currentBalance  || ''}
-                      placeholder="0"
-                      onChange={e => cardField(card.id, 'currentBalance',  numVal(e.target.value))}
-                    />
-                  </label>
-                  <label className="qv-num-field">
-                    <span>Original balance</span>
-                    <input
-                      type="number" min="0" step="1"
-                      className="qv-num-input"
-                      value={card.originalBalance || ''}
-                      placeholder="0"
-                      onChange={e => cardField(card.id, 'originalBalance', numVal(e.target.value))}
-                    />
-                  </label>
-                  <label className="qv-num-field">
-                    <span>Credit limit</span>
-                    <input
-                      type="number" min="0" step="1"
-                      className="qv-num-input"
-                      value={card.creditLimit     || ''}
-                      placeholder="0"
-                      onChange={e => cardField(card.id, 'creditLimit',     numVal(e.target.value))}
-                    />
-                  </label>
-                </div>
-                <div className="qv-bars">
-                  <div className="qv-bar-row">
-                    <span className="qv-bar-lbl">Payoff progress</span>
-                    <span className="qv-bar-pct">{Math.round(payoffPct)}%</span>
-                  </div>
-                  <div className="qv-bar-track">
-                    <div className="qv-bar-fill qv-bar--green" style={{ width: `${payoffPct}%` }} />
-                  </div>
-                  <p className="qv-bar-note">
-                    {$$(card.originalBalance - card.currentBalance)} paid · {$$(card.currentBalance)} remaining
-                  </p>
-
-                  <div className="qv-bar-row" style={{ marginTop: '0.625rem' }}>
-                    <span className="qv-bar-lbl">Utilization</span>
-                    <span className="qv-bar-pct">{Math.round(utilPct)}%</span>
-                  </div>
-                  <div className="qv-bar-track">
-                    <div
-                      className={`qv-bar-fill ${utilPct > 30 ? 'qv-bar--amber' : 'qv-bar--green'}`}
-                      style={{ width: `${utilPct}%` }}
-                    />
-                  </div>
-                  <p className="qv-bar-note">{$$(card.currentBalance)} of {$$(card.creditLimit)} limit</p>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-        <button className="wv-add" onClick={addCard}>+ Add card</button>
-
-        {/* Savings goals */}
-        <h3 className="qv-sub-hd qv-sub-hd--spaced">Savings Goals</h3>
-        {savings.length === 0 && <p className="qv-empty">No savings goals added yet.</p>}
-        <ul className="qv-finance-list">
-          {savings.map(sg => {
-            const savePct = pct(sg.currentAmount, sg.targetAmount);
-            return (
-              <li key={sg.id} className="qv-cc-item">
-                <div className="qv-cc-header">
-                  <input
-                    className="qv-cc-name"
-                    value={sg.name}
-                    placeholder="Goal name"
-                    onChange={e => savingsField(sg.id, 'name', e.target.value)}
-                  />
-                  <button className="wv-del" onClick={() => delSavings(sg.id)} aria-label="Remove">×</button>
-                </div>
-                <div className="qv-num-grid">
-                  <label className="qv-num-field">
-                    <span>Saved so far</span>
-                    <input
-                      type="number" min="0" step="1"
-                      className="qv-num-input"
-                      value={sg.currentAmount || ''}
-                      placeholder="0"
-                      onChange={e => savingsField(sg.id, 'currentAmount', numVal(e.target.value))}
-                    />
-                  </label>
-                  <label className="qv-num-field">
-                    <span>Target amount</span>
-                    <input
-                      type="number" min="0" step="1"
-                      className="qv-num-input"
-                      value={sg.targetAmount || ''}
-                      placeholder="0"
-                      onChange={e => savingsField(sg.id, 'targetAmount', numVal(e.target.value))}
-                    />
-                  </label>
-                </div>
-                <div className="qv-bar-row">
-                  <span className="qv-bar-lbl">Progress</span>
-                  <span className="qv-bar-pct">{Math.round(savePct)}%</span>
-                </div>
-                <div className="qv-bar-track">
-                  <div className="qv-bar-fill qv-bar--accent" style={{ width: `${savePct}%` }} />
-                </div>
-                <p className="qv-bar-note">{$$(sg.currentAmount)} of {$$(sg.targetAmount)}</p>
-              </li>
-            );
-          })}
-        </ul>
-        <button className="wv-add" onClick={addSavings}>+ Add savings goal</button>
-      </div>
-
-      {/* ── Parking lot + Achievements ── */}
-      <div className="qv-bottom-row">
+      {/* Bottom row: Wins | Books | Parking Lot */}
+      <div className="qv-bottom-3">
 
         <div className="qv-card">
-          <h2 className="qv-section-hd">Parking Lot</h2>
-          <p className="qv-section-desc">Ideas to return to later</p>
-          <ul className="wv-list">
-            {parking.map(item => (
-              <li key={item.id} className="wv-item">
-                <input
-                  className="wv-item-input"
-                  value={item.text}
-                  placeholder="Idea or item…"
-                  onChange={e => parkingField(item.id, e.target.value)}
-                />
-                <span className="qv-item-date">{item.addedDate}</span>
-                <button className="wv-del" onClick={() => delParking(item.id)} aria-label="Remove">×</button>
-              </li>
-            ))}
-          </ul>
-          <button className="wv-add" onClick={addParking}>+ Add item</button>
-        </div>
-
-        <div className="qv-card">
-          <h2 className="qv-section-hd">Achievements</h2>
-          <p className="qv-section-desc">{qKey} wins</p>
-          <ul className="wv-list">
+          <div className="qv-section-label">QUARTERLY WINS</div>
+          <div className="qv-bottom-sub">{qKey} achievements</div>
+          {qAchieves.length === 0 && (
+            <p className="qv-no-goals">No wins logged yet — start celebrating your progress!</p>
+          )}
+          <ul className="qv-wins-list">
             {qAchieves.map(a => (
-              <li key={a.id} className="wv-item">
-                <span className="qv-star" aria-hidden="true">★</span>
+              <li key={a.id} className="qv-win-item">
+                <span className="qv-win-star">★</span>
                 <input
                   className="wv-item-input"
                   value={a.text}
-                  placeholder="Win or milestone…"
+                  placeholder="Log a win…"
                   onChange={e => achieveField(a.id, e.target.value)}
                 />
-                <span className="qv-item-date">{a.date}</span>
-                <button className="wv-del" onClick={() => delAchieve(a.id)} aria-label="Remove">×</button>
+                <button className="wv-del" onClick={() => delAchieve(a.id)}>×</button>
               </li>
             ))}
           </ul>
-          <button className="wv-add" onClick={addAchieve}>+ Add achievement</button>
+          <button className="wv-ghost-add" onClick={addAchieve}>+ Log a win</button>
         </div>
 
-      </div>
-
-      {/* ── Books Read This Quarter ── */}
-      <div className="qv-card">
-        <h2 className="qv-section-hd">Books Read This Quarter</h2>
-        {qBooks.length === 0 ? (
-          <p className="qv-empty">No books finished this quarter yet.</p>
-        ) : (
-          <ul className="bk-finished-list">
+        <div className="qv-card">
+          <div className="qv-section-label">BOOKS READ</div>
+          <div className="qv-bottom-sub">{qKey} · {qBooks.length} {qBooks.length === 1 ? 'book' : 'books'}</div>
+          {qBooks.length === 0 && (
+            <p className="qv-no-goals">No books finished yet — mark one complete to see it here.</p>
+          )}
+          <ul className="qv-books-list">
             {qBooks.map(b => (
-              <li key={b.id} className="bk-finished-item">
+              <li key={b.id} className="bk-reading-item">
                 <div className="bk-cover-sm">
                   {b.coverId
                     ? <img src={COVER_URL(b.coverId)} alt="" className="bk-cover-img-sm" loading="lazy" />
@@ -566,16 +337,47 @@ export default function QuarterView({ data, onChange }: Props) {
                 <div className="bk-info">
                   <span className="bk-title">{b.title}</span>
                   {b.author && <span className="bk-author">{b.author}</span>}
+                  {b.finishedDate && <span className="bk-author">{b.finishedDate}</span>}
                 </div>
-                {b.finishedDate && (
-                  <span className="bk-finished-date">{b.finishedDate}</span>
-                )}
               </li>
             ))}
           </ul>
-        )}
-      </div>
+        </div>
 
+        <div className="qv-card">
+          <div className="qv-section-label">IDEA PARKING LOT</div>
+          <div className="qv-bottom-sub">Capture it now, act on it later</div>
+          <input
+            className="qv-parking-ghost"
+            placeholder="Drop an idea…"
+            onKeyDown={e => {
+              if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                onChange(prev => ({
+                  ...prev,
+                  parkingLot: [...parking, { id: crypto.randomUUID(), text: e.currentTarget.value.trim(), addedDate: new Date().toLocaleDateString('en-CA') }],
+                }));
+                e.currentTarget.value = '';
+              }
+            }}
+          />
+          <ul className="qv-parking-list">
+            {parking.map(item => (
+              <li key={item.id} className="qv-parking-item">
+                <span className="qv-parking-bullet">◦</span>
+                <input
+                  className="wv-item-input"
+                  value={item.text}
+                  placeholder="Idea…"
+                  onChange={e => parkingField(item.id, e.target.value)}
+                />
+                <button className="wv-del" onClick={() => delParking(item.id)}>×</button>
+              </li>
+            ))}
+          </ul>
+          <p className="qv-parking-hint">Your idea parking lot</p>
+        </div>
+
+      </div>
     </section>
   );
 }

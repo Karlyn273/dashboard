@@ -1,7 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import CalendarEvents from './CalendarEvents';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface Scripture {
   text: string;
@@ -135,12 +134,6 @@ export default function MorningBriefing({ data, onChange }: Props) {
   const dismissCarryover = (id: string) =>
     updateBriefing({ dismissedCarryovers: [...dismissed, id] });
 
-  const [calMin, calMax] = useMemo(() => {
-    const start = new Date(today + 'T00:00:00');
-    const end   = new Date(today + 'T23:59:59');
-    return [start.toISOString(), end.toISOString()];
-  }, [today]);
-
   const donePriorities  = priorities.filter(p => p.completed && p.text.trim()).length;
   const totalPriorities = priorities.filter(p => p.text.trim()).length;
 
@@ -249,11 +242,6 @@ export default function MorningBriefing({ data, onChange }: Props) {
             </ol>
           </div>
 
-          {/* Today's Schedule */}
-          <div className="mb-card mb-card--schedule">
-            <div className="mb-section-label">Today&rsquo;s Schedule</div>
-            <CalendarEvents timeMin={calMin} timeMax={calMax} groupByDay={false} />
-          </div>
 
         </div>
       </div>
