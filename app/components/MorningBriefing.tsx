@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import CalendarEvents from './CalendarEvents';
 
 interface Scripture {
   text: string;
@@ -128,6 +129,13 @@ export default function MorningBriefing({ data, onChange }: Props) {
   const dismissCarryover = (id: string) =>
     updateBriefing({ dismissedCarryovers: [...dismissed, id] });
 
+  // Stable ISO times for today — recompute only when the calendar date changes
+  const [calMin, calMax] = useMemo(() => {
+    const start = new Date(today + 'T00:00:00');
+    const end   = new Date(today + 'T23:59:59');
+    return [start.toISOString(), end.toISOString()];
+  }, [today]);
+
   const dayOfWeek = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date());
   const fullDate  = new Intl.DateTimeFormat('en-US', {
     month: 'long', day: 'numeric', year: 'numeric',
@@ -236,17 +244,10 @@ export default function MorningBriefing({ data, onChange }: Props) {
             </ol>
           </div>
 
-          {/* Google Calendar (placeholder) */}
+          {/* Today's calendar */}
           <div className="mb-card">
             <h2 className="mb-label">Today&rsquo;s Schedule</h2>
-            <div className="mb-calendar-empty">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" />
-                <path d="M16 2v4M8 2v4M3 10h18" />
-              </svg>
-              <p>Google Calendar not connected</p>
-              <p className="mb-calendar-hint">Events will appear here once connected.</p>
-            </div>
+            <CalendarEvents timeMin={calMin} timeMax={calMax} groupByDay={false} />
           </div>
         </div>
       </div>

@@ -2661,3 +2661,133 @@ body {
 .yv-goal-input:focus        { border-bottom-color: #c07830; }
 .yv-goal-input::placeholder { color: #5a4530; }
 .yv-goal-input--done        { text-decoration: line-through; color: #9a7a55; }
+
+/* ── Calendar Events (.cal-*) ─────────────────────────────────── */
+
+.cal-status {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  padding: 0.25rem 0;
+}
+
+.cal-status--err { color: var(--red); }
+
+/* Not-connected state */
+.cal-connect {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.125rem 0.5rem;
+  text-align: center;
+}
+
+.cal-connect-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  max-width: 17rem;
+  line-height: 1.55;
+}
+
+.cal-connect-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 1rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: inherit;
+  transition: opacity 0.15s;
+}
+
+.cal-connect-btn:hover { opacity: 0.85; }
+
+/* Connected events */
+.cal-events {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.cal-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cal-day-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.cal-day-hd {
+  font-size: 0.63rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  padding-bottom: 0.2rem;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.cal-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.cal-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  line-height: 1.35;
+}
+
+.cal-dot {
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+  margin-top: 0.35rem;
+}
+
+.cal-time {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 4rem;
+}
+
+.cal-title {
+  font-size: 0.82rem;
+  color: var(--text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cal-disconnect-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  transition: color 0.15s;
+  margin-top: 0.25rem;
+}
+
+.cal-disconnect-btn:hover    { color: var(--red); }
+.cal-disconnect-btn:disabled { opacity: 0.5; cursor: default; }

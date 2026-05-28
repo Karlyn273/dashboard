@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import BookSearch, { BookResult } from './BookSearch';
+import CalendarEvents             from './CalendarEvents';
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -391,14 +392,14 @@ export default function WeekView({ data, onChange }: Props) {
           )}
         </div>
 
-        {/* ── Calendar placeholder ── */}
+        {/* ── Week's Schedule ── */}
         <div className="wv-card">
           <h2 className="wv-label">Week&rsquo;s Schedule</h2>
-          <div className="wv-cal-empty">
-            <CalendarIcon />
-            <p>Calendar not connected yet</p>
-            <p className="wv-cal-hint">Week events will appear here once connected.</p>
-          </div>
+          <CalendarEvents
+            timeMin={monday.toISOString()}
+            timeMax={(() => { const d = new Date(monday); d.setDate(monday.getDate() + 7); return d; })().toISOString()}
+            groupByDay
+          />
         </div>
 
       </div>
