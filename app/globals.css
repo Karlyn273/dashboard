@@ -123,7 +123,7 @@ body::after {
   background-repeat: no-repeat;
   background-position: right -10% bottom -20%;
   background-size: 65% auto;
-  opacity: 0.13;
+  opacity: 0.22;
   z-index: 0;
 }
 
@@ -1161,6 +1161,108 @@ body::after {
   flex-shrink: 0;
   line-height: 1;
 }
+
+/* Monthly execution plan – 3-column layout */
+.qv-months-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.875rem;
+  margin-bottom: 0.875rem;
+}
+
+@media (min-width: 720px) {
+  .qv-months-grid { grid-template-columns: 1fr 1fr 1fr; }
+}
+
+.qv-month-card {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.125rem;
+  box-shadow: 0 1px 6px rgba(176, 114, 114, 0.07);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.qv-month-heading {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  border-left: 2px solid var(--accent);
+  padding-left: 0.5rem;
+  margin-bottom: 0;
+}
+
+.qv-month-goal-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.qv-month-goal-ta {
+  width: 100%;
+  background: rgba(176, 114, 114, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  color: var(--text);
+  font-size: 0.875rem;
+  font-family: inherit;
+  line-height: 1.65;
+  padding: 0.5rem 0.625rem;
+  resize: none;
+  outline: none;
+  min-height: 4rem;
+  transition: border-color 0.15s;
+}
+
+.qv-month-goal-ta:focus       { border-color: var(--accent); }
+.qv-month-goal-ta::placeholder{ color: #c8aaaa; }
+
+.qv-month-weeks-label {
+  font-size: 0.63rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  border-left: 2px solid var(--border);
+  padding-left: 0.4rem;
+  margin-bottom: 0.375rem;
+}
+
+.qv-month-week-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-bottom: 0.5rem;
+}
+
+.qv-month-week-lbl {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.qv-month-week-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-family: inherit;
+  padding: 0.15rem 0;
+  outline: none;
+  width: 100%;
+  transition: border-bottom-color 0.15s;
+}
+
+.qv-month-week-input:focus        { border-bottom-color: var(--accent); }
+.qv-month-week-input::placeholder { color: #c8aaaa; }
 
 /* ── Habit Tracker ────────────────────────────────────────────── */
 
