@@ -184,7 +184,7 @@ export default function QuarterView({ data, onChange }: Props) {
     setQData({
       monthPlans: {
         ...monthPlans,
-        [mIdx]: { goal: '', weekNotes: {}, ...monthPlans[mIdx], ...updates },
+        [mIdx]: { ...{ goal: '', weekNotes: {} }, ...monthPlans[mIdx], ...updates },
       },
     });
 
