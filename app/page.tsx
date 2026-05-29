@@ -97,7 +97,7 @@ export default function DashboardPage() {
         </nav>
         <span className={`status status--${status}`}>{STATUS_LABEL[status]}</span>
       </header>
-      <div className="greeting">Hey, Karlyn!</div>
+      <div className="greeting">Hey, Karlyn 😊 💛</div>
       <main className="main">
         {tab === 'morning' && <MorningBriefing data={data} onChange={updateData} />}
         {tab === 'week'    && <WeekView        data={data} onChange={updateData} />}

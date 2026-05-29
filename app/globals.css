@@ -100,12 +100,44 @@ body::after {
 .status--error  { background: color-mix(in srgb, var(--red)    15%, transparent); color: var(--red);    }
 
 .greeting {
-  padding: 0.625rem 1.5rem 0;
-  font-size: 1.375rem;
+  padding: 0.75rem 1.5rem 0.125rem;
+  font-size: 1.5rem;
   font-weight: 700;
-  color: var(--text);
+  color: var(--accent);
   letter-spacing: -0.02em;
   flex-shrink: 0;
+}
+
+/* Flower overlay on scripture card */
+.mb-card--scripture {
+  position: relative;
+  overflow: hidden;
+}
+
+.mb-card--scripture::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url('/floral-bg.svg');
+  background-repeat: no-repeat;
+  background-position: right -10% bottom -20%;
+  background-size: 65% auto;
+  opacity: 0.13;
+  z-index: 0;
+}
+
+.mb-card--scripture > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Confetti canvas */
+.confetti-canvas {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
 }
 
 .main {

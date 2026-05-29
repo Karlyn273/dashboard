@@ -1,7 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import CalendarEvents from './CalendarEvents';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface Scripture {
   text: string;
@@ -112,11 +111,93 @@ export default function MorningBriefing({ data, onChange }: Props) {
     generate();
   }, [today, generate]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const confettiRef = useRef<HTMLCanvasElement | null>(null);
+  const confettiAnimRef = useRef<number | null>(null);
+
+  const launchCelebration = useCallback(() => {
+    // Chime sound via Web Audio API
+    try {
+      const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      const notes = [523.25, 659.25, 783.99, 1046.50];
+      notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = freq;
+        osc.type = 'sine';
+        const t = ctx.currentTime + i * 0.12;
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.18, t + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+        osc.start(t);
+        osc.stop(t + 0.5);
+      });
+    } catch { /* audio not available */ }
+
+    // Confetti burst
+    const canvas = document.createElement('canvas');
+    canvas.className = 'confetti-canvas';
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    document.body.appendChild(canvas);
+    confettiRef.current = canvas;
+
+    const colors = ['#b07272', '#e8a87c', '#f9d56e', '#c98880', '#7a816c', '#ddc8c4', '#ecddd9'];
+    interface Particle { x: number; y: number; vx: number; vy: number; color: string; size: number; angle: number; spin: number; }
+    const particles: Particle[] = Array.from({ length: 90 }, () => ({
+      x: Math.random() * canvas.width,
+      y: -10,
+      vx: (Math.random() - 0.5) * 4,
+      vy: Math.random() * 4 + 2,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      size: Math.random() * 7 + 4,
+      angle: Math.random() * Math.PI * 2,
+      spin: (Math.random() - 0.5) * 0.2,
+    }));
+
+    const c2d = canvas.getContext('2d')!;
+    let frame = 0;
+
+    const animate = () => {
+      c2d.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.08;
+        p.angle += p.spin;
+        c2d.save();
+        c2d.translate(p.x, p.y);
+        c2d.rotate(p.angle);
+        c2d.fillStyle = p.color;
+        c2d.globalAlpha = Math.max(0, 1 - frame / 90);
+        c2d.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+        c2d.restore();
+      });
+      frame++;
+      if (frame < 100) {
+        confettiAnimRef.current = requestAnimationFrame(animate);
+      } else {
+        canvas.remove();
+        confettiRef.current = null;
+      }
+    };
+    confettiAnimRef.current = requestAnimationFrame(animate);
+  }, []);
+
+  useEffect(() => () => {
+    if (confettiAnimRef.current) cancelAnimationFrame(confettiAnimRef.current);
+    if (confettiRef.current) confettiRef.current.remove();
+  }, []);
+
   const setPriorityText = (i: number, text: string) =>
     updateBriefing({ priorities: priorities.map((p, idx) => idx === i ? { ...p, text } : p) });
 
-  const togglePriority = (i: number) =>
+  const togglePriority = (i: number) => {
+    const wasCompleted = priorities[i]?.completed;
     updateBriefing({ priorities: priorities.map((p, idx) => idx === i ? { ...p, completed: !p.completed } : p) });
+    if (!wasCompleted && priorities[i]?.text.trim()) launchCelebration();
+  };
 
   const includeCarryover = (task: Priority) => {
     const emptyIdx = priorities.findIndex(p => !p.text.trim());
@@ -128,13 +209,6 @@ export default function MorningBriefing({ data, onChange }: Props) {
 
   const dismissCarryover = (id: string) =>
     updateBriefing({ dismissedCarryovers: [...dismissed, id] });
-
-  // Stable ISO times for today — recompute only when the calendar date changes
-  const [calMin, calMax] = useMemo(() => {
-    const start = new Date(today + 'T00:00:00');
-    const end   = new Date(today + 'T23:59:59');
-    return [start.toISOString(), end.toISOString()];
-  }, [today]);
 
   const dayOfWeek = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date());
   const fullDate  = new Intl.DateTimeFormat('en-US', {
@@ -153,7 +227,7 @@ export default function MorningBriefing({ data, onChange }: Props) {
         {/* Top row: Scripture + Priorities side by side */}
         <div className="mb-top-row">
           {/* Scripture + Reflection */}
-          <div className="mb-card">
+          <div className="mb-card mb-card--scripture">
             <h2 className="mb-label">Scripture</h2>
             {generating && <p className="mb-shimmer">Loading today's scripture…</p>}
             {genError && (
@@ -265,11 +339,6 @@ export default function MorningBriefing({ data, onChange }: Props) {
           </div>
         )}
 
-        {/* Today's calendar */}
-        <div className="mb-card">
-          <h2 className="mb-label">Today&rsquo;s Schedule</h2>
-          <CalendarEvents timeMin={calMin} timeMax={calMax} groupByDay={false} />
-        </div>
       </div>
     </section>
   );
