@@ -253,6 +253,97 @@ body::after {
   color: var(--text-muted);
 }
 
+/* Daily task cards */
+.mb-task-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.mb-task-card {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  background: rgba(176, 114, 114, 0.05);
+  border: 1px solid rgba(176, 114, 114, 0.13);
+  border-radius: 0.625rem;
+  padding: 0.625rem 0.75rem;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.mb-task-card:hover { border-color: rgba(176, 114, 114, 0.25); }
+
+.mb-task-card--done {
+  background: rgba(0,0,0,0.02);
+  border-color: var(--border);
+  opacity: 0.65;
+}
+
+.mb-task-num {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(176, 114, 114, 0.14);
+  width: 1.3rem;
+  height: 1.3rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0;
+}
+
+.mb-carried-badge {
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 9999px;
+  padding: 0.125rem 0.45rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.mb-task-del {
+  background: transparent;
+  border: none;
+  color: #c8aaaa;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0 0.15rem;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color 0.15s;
+  font-family: inherit;
+}
+
+.mb-task-del:hover { color: var(--red); }
+
+.mb-add-task {
+  width: 100%;
+  background: transparent;
+  border: 1px dashed rgba(176, 114, 114, 0.3);
+  color: var(--text-muted);
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.mb-add-task:hover {
+  color: var(--accent);
+  border-color: rgba(176, 114, 114, 0.5);
+  background: rgba(176, 114, 114, 0.04);
+}
+
 /* Intention */
 .mb-intention {
   width: 100%;

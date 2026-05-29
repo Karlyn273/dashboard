@@ -11,6 +11,7 @@ interface Priority {
   id: string;
   text: string;
   completed: boolean;
+  carriedOver?: boolean;
 }
 
 interface TodayBriefing {
@@ -19,7 +20,6 @@ interface TodayBriefing {
   generatedAt?: string;
   priorities?: Priority[];
   intention?: string;
-  dismissedCarryovers?: string[];
 }
 
 type BriefingStore = Record<string, TodayBriefing>;
@@ -52,19 +52,11 @@ export default function MorningBriefing({ data, onChange }: Props) {
   const [generating, setGenerating] = useState(false);
   const [genError,   setGenError]   = useState('');
 
-  // Stable placeholder priorities so IDs don't change between renders
-  const defaultPriorities = useRef<Priority[]>([
-    makeEmptyPriority(), makeEmptyPriority(), makeEmptyPriority(),
-  ]);
-
   const store: BriefingStore       = ((data.briefing ?? {}) as BriefingStore);
   const briefing: TodayBriefing    = store[today]     ?? {};
   const yesterday_b: TodayBriefing = store[yesterday] ?? {};
 
-  const dismissed  = briefing.dismissedCarryovers ?? [];
-  const carryovers = (yesterday_b.priorities ?? [])
-    .filter(p => p.text.trim() && !p.completed && !dismissed.includes(p.id));
-  const priorities = briefing.priorities ?? defaultPriorities.current;
+  const priorities = briefing.priorities ?? [];
 
   const updateBriefing = useCallback(
     (updates: Partial<TodayBriefing>) => {
@@ -190,6 +182,15 @@ export default function MorningBriefing({ data, onChange }: Props) {
     if (confettiRef.current) confettiRef.current.remove();
   }, []);
 
+  // Auto-seed today's tasks with yesterday's incomplete ones on first open
+  useEffect(() => {
+    if (briefing.priorities !== undefined) return;
+    const incomplete = (yesterday_b.priorities ?? [])
+      .filter(p => p.text.trim() && !p.completed)
+      .map(p => ({ ...p, id: crypto.randomUUID(), completed: false, carriedOver: true }));
+    updateBriefing({ priorities: incomplete.length > 0 ? incomplete : [makeEmptyPriority()] });
+  }, [today]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const setPriorityText = (i: number, text: string) =>
     updateBriefing({ priorities: priorities.map((p, idx) => idx === i ? { ...p, text } : p) });
 
@@ -199,16 +200,11 @@ export default function MorningBriefing({ data, onChange }: Props) {
     if (!wasCompleted && priorities[i]?.text.trim()) launchCelebration();
   };
 
-  const includeCarryover = (task: Priority) => {
-    const emptyIdx = priorities.findIndex(p => !p.text.trim());
-    const next     = emptyIdx >= 0
-      ? priorities.map((p, i) => i === emptyIdx ? { ...task, completed: false } : p)
-      : [...priorities, { ...task, completed: false }];
-    updateBriefing({ priorities: next, dismissedCarryovers: [...dismissed, task.id] });
-  };
+  const deleteTask = (i: number) =>
+    updateBriefing({ priorities: priorities.filter((_, idx) => idx !== i) });
 
-  const dismissCarryover = (id: string) =>
-    updateBriefing({ dismissedCarryovers: [...dismissed, id] });
+  const addTask = () =>
+    updateBriefing({ priorities: [...priorities, makeEmptyPriority()] });
 
   const dayOfWeek = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date());
   const fullDate  = new Intl.DateTimeFormat('en-US', {
@@ -249,10 +245,10 @@ export default function MorningBriefing({ data, onChange }: Props) {
             )}
           </div>
 
-          {/* Top 3 Priorities */}
+          {/* Daily Tasks */}
           <div className="mb-card">
             <div className="mb-task-header">
-              <h2 className="mb-label" style={{ marginBottom: 0 }}>Top 3 Priorities</h2>
+              <h2 className="mb-label" style={{ marginBottom: 0 }}>Daily Tasks</h2>
               {priorities.some(p => p.text.trim()) && (
                 <span className="mb-task-count">
                   {priorities.filter(p => p.completed && p.text.trim()).length}/{priorities.filter(p => p.text.trim()).length} done
@@ -260,7 +256,7 @@ export default function MorningBriefing({ data, onChange }: Props) {
               )}
             </div>
             {priorities.some(p => p.text.trim()) && (
-              <div className="wv-progress-track" style={{ margin: '0.5rem 0 0.75rem' }}>
+              <div className="wv-progress-track" style={{ margin: '0.5rem 0 0.875rem' }}>
                 <div
                   className="wv-progress-fill"
                   style={{
@@ -272,9 +268,10 @@ export default function MorningBriefing({ data, onChange }: Props) {
                 />
               </div>
             )}
-            <ol className="mb-priority-list" style={{ marginTop: priorities.some(p => p.text.trim()) ? 0 : '0.875rem' }}>
-              {priorities.slice(0, 3).map((p, i) => (
-                <li key={p.id} className="mb-priority-item">
+            <ol className="mb-task-list">
+              {priorities.map((p, i) => (
+                <li key={p.id} className={`mb-task-card${p.completed ? ' mb-task-card--done' : ''}`}>
+                  <span className="mb-task-num">{i + 1}</span>
                   <button
                     className={`mb-check${p.completed ? ' mb-check--done' : ''}`}
                     onClick={() => togglePriority(i)}
@@ -289,13 +286,18 @@ export default function MorningBriefing({ data, onChange }: Props) {
                   <input
                     type="text"
                     className={`mb-priority-input${p.completed ? ' mb-priority-input--done' : ''}`}
-                    placeholder={`Priority ${i + 1}`}
+                    placeholder={`Task ${i + 1}`}
                     value={p.text}
                     onChange={e => setPriorityText(i, e.target.value)}
                   />
+                  {p.carriedOver && !p.completed && (
+                    <span className="mb-carried-badge">yesterday</span>
+                  )}
+                  <button className="mb-task-del" onClick={() => deleteTask(i)} aria-label="Remove task">×</button>
                 </li>
               ))}
             </ol>
+            <button className="mb-add-task" onClick={addTask}>+ Add task</button>
           </div>
         </div>
 
@@ -309,35 +311,6 @@ export default function MorningBriefing({ data, onChange }: Props) {
             onChange={e => updateBriefing({ intention: e.target.value })}
           />
         </div>
-
-        {/* Carryovers from yesterday */}
-        {carryovers.length > 0 && (
-          <div className="mb-card">
-            <h2 className="mb-label">From Yesterday</h2>
-            <ul className="mb-carryover-list">
-              {carryovers.map(task => (
-                <li key={task.id} className="mb-carryover-item">
-                  <span className="mb-carryover-badge">carried over</span>
-                  <span className="mb-carryover-text">{task.text}</span>
-                  <div className="mb-carryover-actions">
-                    <button
-                      className="mb-btn mb-btn--include"
-                      onClick={() => includeCarryover(task)}
-                    >
-                      Include
-                    </button>
-                    <button
-                      className="mb-btn mb-btn--dismiss"
-                      onClick={() => dismissCarryover(task.id)}
-                    >
-                      Dismiss
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
 
       </div>
     </section>

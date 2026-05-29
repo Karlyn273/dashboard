@@ -19,7 +19,7 @@ const STATUS_LABEL: Record<SaveStatus, string> = {
 };
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'morning', label: 'Morning'     },
+  { id: 'morning', label: 'Daily'      },
   { id: 'week',    label: 'Week'       },
   { id: 'quarter', label: 'Quarter'    },
   { id: 'habits',  label: 'Habits'     },
