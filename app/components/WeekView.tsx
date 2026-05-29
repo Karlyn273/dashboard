@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import BookSearch, { BookResult } from './BookSearch';
 import CalendarEvents             from './CalendarEvents';
 
@@ -168,6 +168,35 @@ export default function WeekView({ data, onChange }: Props) {
   const [offset,     setOffset]     = useState(0);
   const [showSearch, setShowSearch] = useState(false);
 
+  // ── Affirmations ──
+  const affirmations = ((data.affirmations ?? ['I am capable of achieving everything I set my mind to.']) as string[]);
+  const [affirmIdx,  setAffirmIdx]  = useState(0);
+  const [editingAff, setEditingAff] = useState(false);
+  const affirmTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (affirmations.length <= 1) return;
+    affirmTimer.current = setInterval(() =>
+      setAffirmIdx(i => (i + 1) % affirmations.length), 6000);
+    return () => { if (affirmTimer.current) clearInterval(affirmTimer.current); };
+  }, [affirmations.length]);
+
+  const setAffirmations = (next: string[]) =>
+    onChange(prev => ({ ...prev, affirmations: next }));
+
+  const updateAffirmation = (val: string) => {
+    const next = [...affirmations];
+    next[affirmIdx] = val;
+    setAffirmations(next);
+  };
+
+  const addAffirmation = () => {
+    const next = [...affirmations, ''];
+    setAffirmations(next);
+    setAffirmIdx(next.length - 1);
+    setEditingAff(true);
+  };
+
   const monday = getMonday(offset);
   const key    = weekKey(monday);
   const range  = formatRange(monday);
@@ -251,6 +280,42 @@ export default function WeekView({ data, onChange }: Props) {
   return (
     <section className="wv">
 
+      {/* ── Affirmation carousel ── */}
+      <div className="affirmation-wrap">
+        {editingAff ? (
+          <input
+            className="affirmation-edit"
+            autoFocus
+            value={affirmations[affirmIdx] ?? ''}
+            placeholder="Type your affirmation…"
+            onChange={e => updateAffirmation(e.target.value)}
+            onBlur={() => setEditingAff(false)}
+            onKeyDown={e => { if (e.key === 'Enter') setEditingAff(false); }}
+          />
+        ) : (
+          <p
+            className="affirmation-text"
+            onClick={() => setEditingAff(true)}
+            title="Click to edit"
+          >
+            &ldquo;{affirmations[affirmIdx] || 'Click to add your affirmation…'}&rdquo;
+          </p>
+        )}
+        {affirmations.length > 1 && (
+          <div className="affirmation-dots">
+            {affirmations.map((_, i) => (
+              <button
+                key={i}
+                className={`affirmation-dot${i === affirmIdx ? ' affirmation-dot--active' : ''}`}
+                onClick={() => { setAffirmIdx(i); setEditingAff(false); }}
+                aria-label={`Affirmation ${i + 1}`}
+              />
+            ))}
+          </div>
+        )}
+        <button className="affirmation-add" onClick={addAffirmation}>+ Add affirmation</button>
+      </div>
+
       {/* ── Week navigation ── */}
       <div className="wv-nav">
         <button className="wv-nav-btn" onClick={() => setOffset(o => o - 1)} aria-label="Previous week">
@@ -307,20 +372,20 @@ export default function WeekView({ data, onChange }: Props) {
 
         {/* ── Gym sessions ── */}
         <div className="wv-card">
-          <h2 className="wv-label">Gym Sessions</h2>
-          <div className="wv-gym-row">
+          <h2 className="wv-label">Gym This Week</h2>
+          <div className="wv-gym-tile-row">
             {GYM_DAYS.map((day, i) => (
               <button
                 key={day}
-                className={`wv-gym-day${gym[day] ? ' wv-gym-day--on' : ''}`}
+                className={`wv-gym-tile${gym[day] ? ' wv-gym-tile--on' : ''}`}
                 onClick={() => toggleGym(day)}
                 aria-label={GYM_ABBR[i]}
                 aria-pressed={!!gym[day]}
               >
-                <span className="wv-gym-circle">
+                <span className="wv-gym-tile-box">
                   {gym[day] && <Tick />}
                 </span>
-                <span className="wv-gym-abbr">{GYM_ABBR[i]}</span>
+                <span className="wv-gym-tile-lbl">{GYM_ABBR[i]}</span>
               </button>
             ))}
           </div>
@@ -330,7 +395,7 @@ export default function WeekView({ data, onChange }: Props) {
         </div>
 
         {/* ── Weekly focus + goals ── */}
-        <div className="wv-card">
+        <div className="wv-card wv-card--focus">
           <h2 className="wv-label">Weekly Focus</h2>
           <textarea
             className="wv-textarea wv-focus-ta"
