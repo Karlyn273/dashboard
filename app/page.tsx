@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import MorningBriefing from './components/MorningBriefing';
 import WeekView        from './components/WeekView';
 import QuarterView     from './components/QuarterView';
@@ -28,10 +29,16 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 export default function DashboardPage() {
+  const router              = useRouter();
   const [data,   setData]   = useState<Record<string, unknown> | null>(null);
   const [status, setStatus] = useState<SaveStatus>('saved');
   const [tab,    setTab]    = useState<Tab>('morning');
   const saveTimer           = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const logout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    router.push('/login');
+  };
 
   useEffect(() => {
     fetch('/api/dashboard')
@@ -96,6 +103,7 @@ export default function DashboardPage() {
           ))}
         </nav>
         <span className={`status status--${status}`}>{STATUS_LABEL[status]}</span>
+        <button className="logout-btn" onClick={logout}>Sign out</button>
       </header>
       <div className="greeting">Hey, Karlyn 😊 💛</div>
       <main className="main">
